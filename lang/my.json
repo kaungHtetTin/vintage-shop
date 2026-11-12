@@ -1,0 +1,10 @@
+{
+  "The given data was invalid.": "ထည့်သွင်းထားသော အချက်အလက် မမှန်ပါ။",
+  "(and :count more error)": "(နောက်ထပ် အမှား :count ခု)",
+  "(and :count more errors)": "(နောက်ထပ် အမှား :count ခု)",
+  "The :attribute must contain at least one letter.": ":attribute တွင် အနည်းဆုံး စာလုံးတစ်လုံး ပါဝင်ရမည်။",
+  "The :attribute must contain at least one number.": ":attribute တွင် အနည်းဆုံး ဂဏန်းတစ်လုံး ပါဝင်ရမည်။",
+  "The :attribute must contain at least one symbol.": ":attribute တွင် အနည်းဆုံး သင်္ကေတတစ်ခု ပါဝင်ရမည်။",
+  "The :attribute must contain at least one uppercase and one lowercase letter.": ":attribute တွင် စာလုံးအကြီးနှင့် အသေး အနည်းဆုံးတစ်လုံးစီ ပါဝင်ရမည်။",
+  "The given :attribute has appeared in a data leak. Please choose a different :attribute.": "ဤ :attribute သည် ဒေတာပေါက်ကြားမှုတွင် ပါဝင်ခဲ့သည်။ အခြား :attribute ရွေးပါ။"
+}

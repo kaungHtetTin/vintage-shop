@@ -1,0 +1,51 @@
+const fs=require('node:fs');
+const source=fs.readFileSync('scripts/verify-crud-modals.cjs','utf8');
+let prefix=source.slice(0,source.search(/    try \{\r?\n        await fs.mkdir\('artifacts\/admin-consistency'/));
+prefix=prefix.replace('props: { ...common, ...fixture[1] } };',"props: { ...common, ...fixture[1], ...(route==='/admin/finance'||route==='/admin/reports'?{filters:{...(route==='/admin/reports'?{year:2026,month:11}:{}),...Object.fromEntries(url.searchParams)}}:{}) } };");
+const checks=`
+    fixtures['/admin/finance'][1].summary={cash_in:350000,cash_out:180000,net_cash:170000,refund_due:5000,bale_purchases:150000,laundry:20000};
+    fixtures['/admin/finance'][1].bales=pager([bale]);
+    fixtures['/admin/finance'][1].entries=pager([{id:1,entry_date:'2026-11-12',reference:'RCT-001',title:'Customer refund',category:'refund_payable',status:'pending',amount:5000,type:'expense',payment_method:'cash'},{id:2,entry_date:'2026-11-12',reference:'B-001',title:'Bale sales',category:'pos_sale',status:'approved',amount:350000,type:'income',payment_method:'mmqr'}]);
+    fixtures['/admin/reports']=['Admin/Bales/Reports',{charts:{monthly:[],yearly:[]},filters:{year:2026,month:11},defaults:{year:2026,month:11},locations:[location]}];
+    await fs.mkdir('artifacts/finance-layout',{recursive:true});
+    const openFilters=async()=>{await page.click('.admin-filter-trigger');await dialog();await page.waitForFunction(()=>Math.abs(document.querySelector('[role="dialog"]').getBoundingClientRect().right-innerWidth)<1);};
+    try {
+        await page.setViewport({width:1440,height:900});await goto('/admin/finance');
+        assert.equal(await page.$eval('h1',n=>n.textContent),'Finance');
+        assert.equal(await page.$$('.finance-summary-card').then(n=>n.length),6);
+        const order=await page.$$eval('.finance-page-content > section',nodes=>nodes.map(n=>n.className));
+        assert.ok(order[1].includes('finance-cash-ledger'));assert.equal(order.length,2);
+        assert.equal(await page.$$('.finance-bale-results').then(n=>n.length),0);
+        assert.ok(await page.$eval('.admin-page-heading',n=>[...n.querySelectorAll('button')].some(n=>n.textContent==='Add expense')));
+        assert.equal(await page.$$('.bale-intro,.bale-cost-strip,.bale-stats').then(n=>n.length),0);
+        assert.ok(await page.$eval('.finance-cash-ledger',n=>n.textContent.includes('Approved')&&n.textContent.includes('Pending')));
+        await page.screenshot({path:'artifacts/finance-layout/desktop.png',fullPage:true});
+        await click('Add expense');await dialog();await page.screenshot({path:'artifacts/finance-layout/expense-modal.png'});
+        await page.type('[role="dialog"] input[maxlength="255"]','Shop rent');
+        await page.type('[role="dialog"] input[type="number"]','12000');
+        await click('Record expense');
+        await page.waitForFunction(()=>document.querySelector('[role="dialog"]').textContent.includes('Please check'));
+        assert.equal(await page.$eval('[role="dialog"] input[maxlength="255"]',n=>n.value),'Shop rent');await escape();
+        await click('Record refund paid');await dialog();await escape();
+        await openFilters();const select=await page.$('[role="dialog"] select');await select.select('1');
+        await click('Apply filters');await closed();await page.waitForFunction(()=>location.search.includes('location_id=1'));
+        assert.ok(await page.$eval('.finance-summary-scope',n=>n.textContent.includes('Main branch')));
+        assert.match(await page.$eval('.admin-page-heading a',n=>n.href),/location_id=1/);
+        await page.setViewport({width:1280,height:720});await page.evaluate(()=>document.querySelector('.app-root').dataset.theme='dark');
+        await page.screenshot({path:'artifacts/finance-layout/dark.png',fullPage:true});
+        await page.setViewport({width:390,height:844});await page.evaluate(()=>document.querySelector('.app-root').dataset.theme='light');
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        assert.equal(await page.$$eval('.finance-page-content,.finance-summary-grid,.finance-data-section',nodes=>nodes.some(n=>n.getBoundingClientRect().right>innerWidth+1)),false);
+        assert.ok(await page.$eval('.finance-summary-card',n=>n.getBoundingClientRect().width<190));
+        await page.screenshot({path:'artifacts/finance-layout/mobile.png',fullPage:true});
+        await goto('/admin/reports');
+        assert.equal(await page.$$('.sales-chart-panel').then(n=>n.length),2);
+        assert.equal(await page.$$('table').then(n=>n.length),0);
+        assert.equal(await page.$$eval('.admin-page-heading button',nodes=>nodes.some(n=>n.textContent==='Add expense')),false);
+        assert.deepEqual(errors,[]);
+        console.log('PASS: compact summary, ledger-first finance layout, report order, header actions, expense validation retention, refund modal, filters/export, desktop/mobile/dark.');
+    } finally {await browser.close();}
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});
+`;
+eval(prefix+checks);

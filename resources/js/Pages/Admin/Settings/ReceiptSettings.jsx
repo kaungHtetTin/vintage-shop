@@ -1,0 +1,78 @@
+import { usePhraseTranslation as useUiTranslation } from '@/Utils/i18n';
+import ReceiptPaper, { receiptDefaults } from '@/Components/Admin/ReceiptPaper';
+import { PanelHeading } from '@/Components/Admin/shared';
+import { usePhraseTranslation } from '@/Utils/i18n';
+import '@/styles/receipt.css';
+import { receiptPaperSizes } from '@/Utils/receiptPaper';
+
+const sampleOrder = {
+    receipt_number: 'RCT-PREVIEW', created_at: '2026-01-01T12:00:00',
+    location: { name: 'Main Store' }, user: { name: 'Sample customer' }, server: { name: 'Cashier' },
+    items: [
+        { id: 1, product: { name: 'Sample product', code: 'PRD-001' }, unit_name: 'Piece', quantity: 2, unit_price: 3000, total_price: 6000, foc_quantity: 1, foc_unit: { name: 'Piece' } },
+        { id: 2, product: { name: 'Sample accessory', code: 'PRD-002' }, unit_name: 'Box', quantity: 1, unit_price: 4000, total_price: 4000 },
+    ],
+    total_amount: 10000, discount_amount: 500, final_amount: 9500, payment_method: 'cash',
+    pos_tender_summary: { tender_type: 'cash', amount_tendered: 10000, change_due: 500 },
+};
+
+export default function ReceiptSettings({ form, settings, logoUrl }) {
+    const uiText = useUiTranslation();
+    const t = usePhraseTranslation();
+    const receipt = { ...receiptDefaults, ...form.data.receipt };
+    const set = (key, value) => form.setData('receipt', { ...receipt, [key]: value });
+    return <div className="settings-section-content">
+        <PanelHeading eyebrow={t('Receipts')} title={t('POS receipt settings')} />
+        
+        <div className="receipt-settings-layout">
+            <div className="stack-sm">
+                <div className="settings-compact-grid">
+                    {['shop_name', 'phone'].map((key) => <label className="form-field" key={key}>
+                        <span>{t(key === 'shop_name' ? 'Shop name' : 'Phone')}</span>
+                        <input maxLength={80} value={receipt[key]} placeholder={uiText(key === 'shop_name' ? form.data.app_name : '')} onChange={(e) => set(key, e.target.value)} />
+                        {key === 'shop_name' && <small>{t('Leave blank to use the application name.')}</small>}
+                        {form.errors[`receipt.${key}`] && <small className="field-error">{uiText(form.errors[`receipt.${key}`])}</small>}
+                    </label>)}
+                </div>
+                {['address', 'footer'].map((key) => <label className="form-field" key={key}>
+                    <span>{t(key === 'address' ? 'Shop address' : 'Footer message')}</span>
+                    <textarea rows={3} maxLength={300} value={receipt[key]} onChange={(e) => set(key, e.target.value)} />
+                    {form.errors[`receipt.${key}`] && <small className="field-error">{uiText(form.errors[`receipt.${key}`])}</small>}
+                </label>)}
+                <label className="form-field"><span>{t('Paper size')}</span>
+                    <select value={receipt.paper_size} onChange={(e) => set('paper_size', e.target.value)}>
+                        {receiptPaperSizes.map(paper => <option key={paper.id} value={paper.id}>{paper.label}</option>)}
+                    </select>
+                    <small>{t('Select the matching paper in your printer dialog. Thermal printing uses the printer’s paper length.')}</small>
+                    {form.errors['receipt.paper_size'] && <small className="field-error">{uiText(form.errors['receipt.paper_size'])}</small>}
+                </label>
+                <fieldset className="receipt-options"><legend>{t('Receipt options')}</legend>
+                    {Object.entries({ show_logo: 'Show brand logo', show_customer: 'Show customer', show_foc: 'Show FOC details', auto_print: 'Print automatically after completing a sale' }).map(([key, label]) =>
+                        <div key={key}><label><input type="checkbox" checked={receipt[key]} onChange={(e) => set(key, e.target.checked)} />{t(label)}</label>
+                            {form.errors[`receipt.${key}`] && <small className="field-error">{uiText(form.errors[`receipt.${key}`])}</small>}
+                        </div>)}
+                </fieldset>
+                <small>{t('Automatic printing opens the browser print dialog; it does not silently send to a printer.')}</small>
+                <fieldset className="receipt-options"><legend>{t('Direct printer and cash drawer')}</legend>
+                    <label><input type="checkbox" checked={receipt.qz_printing} onChange={(e) => set('qz_printing', e.target.checked)} />{t('Use QZ Tray direct printing')}</label>
+                    {form.errors['receipt.qz_printing'] && <small className="field-error">{uiText(form.errors['receipt.qz_printing'])}</small>}
+                    <label className="form-field">
+                        <span>{t('Windows printer name')}</span>
+                        <input maxLength={180} value={receipt.qz_printer_name} disabled={!receipt.qz_printing} placeholder={uiText("EPSON TM-T82 Receipt")} onChange={(e) => set('qz_printer_name', e.target.value)} />
+                        <small>{t('Enter the printer name exactly as shown in Windows Printers & scanners.')}</small>
+                    </label>
+                    <label><input type="checkbox" checked={receipt.cash_drawer} disabled={!receipt.qz_printing} onChange={(e) => set('cash_drawer', e.target.checked)} />{t('Open cash drawer with printed receipt')}</label>
+                    {form.errors['receipt.cash_drawer'] && <small className="field-error">{uiText(form.errors['receipt.cash_drawer'])}</small>}
+                </fieldset>
+                <small>{t('QZ Tray must be installed and running on the POS computer. The printer must support ESC/POS and the drawer must be connected to its drawer port.')}</small>
+            </div>
+            <aside className="receipt-settings-preview" aria-label={t('Receipt preview')}>
+                <p className="eyebrow">{t('Live preview')} · {receipt.paper_size}</p>
+                <small>{t('Sample data only. Save settings to apply changes.')}</small>
+                <div className="receipt-preview-stage">
+                    <ReceiptPaper key={receipt.paper_size} order={sampleOrder} settings={{ ...settings, app_name: form.data.app_name, logo_url: logoUrl, receipt }} />
+                </div>
+            </aside>
+        </div>
+    </div>;
+}

@@ -1,0 +1,874 @@
+/* Shared operations UI: warm surfaces, compact fields, quiet tables. */
+.app-root .locale-switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; color: var(--color-text); }
+.app-root .locale-switch-heading { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; white-space: nowrap; }
+.app-root .locale-switch-heading > svg { flex-shrink: 0; color: var(--color-muted); }
+.app-root .locale-switch-options { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.app-root .locale-switch-options > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    min-height: 32px;
+    margin: 0;
+    padding: 5px 8px;
+    border: 0;
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.app-root .locale-switch-options > button:hover { background: var(--locale-hover, var(--color-soft)); }
+.app-root .locale-switch-options > button[aria-pressed='true'] { background: var(--color-primary, #a45138); color: #fff; font-weight: 600; }
+.app-root .locale-switch-options > button:focus-visible { outline: 2px solid var(--color-primary, #a45138); outline-offset: 2px; }
+.app-root .locale-switch-options > button:disabled { cursor: wait; opacity: .65; }
+.app-root .locale-switch--compact { justify-content: flex-start; gap: 6px; }
+.app-root .admin-sidebar-language { display: none; }
+@media (max-width: 760px) {
+    .app-root.vintage-admin .admin-topbar .admin-locale-switch { display: none; }
+    .app-root.vintage-admin .admin-sidebar-language { display: block; flex-shrink: 0; margin-top: auto; padding: 14px 0 4px; border-top: 1px solid #ffffff25; }
+    .app-root.vintage-admin .sidebar-locale-switch { --locale-hover: #ffffff18; color: #f0eedf; }
+    .app-root.vintage-admin .sidebar-locale-switch .locale-switch-heading > svg { color: #b0b6a2; }
+    .app-root.vintage-admin .sidebar-locale-switch .locale-switch-options > button { min-height: 40px; min-width: 40px; }
+    .app-root.vintage-admin .admin-sidebar .v-sidebar-note { display: none; }
+}
+@media (max-width: 760px) {
+    .app-root.vintage-admin .admin-page-heading {
+        align-items: stretch;
+        text-align: left;
+    }
+    .app-root.vintage-admin .admin-page-heading > div:first-child {
+        width: 100%;
+        text-align: left;
+    }
+}
+.app-root.vintage-admin .settings-account-form { display: grid; gap: 14px; }
+.app-root.vintage-admin .profile-social-editor {
+    width: 100%;
+    max-width: 620px;
+    display: grid;
+    gap: 20px;
+}
+.app-root.vintage-admin .profile-social-identity {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    padding-block: 4px 8px;
+}
+.app-root.vintage-admin .profile-social-photo {
+    position: relative;
+    flex: 0 0 80px;
+}
+.app-root.vintage-admin .profile-social-avatar {
+    display: grid;
+    place-items: center;
+    width: 80px;
+    height: 80px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-size: 28px;
+    font-weight: 600;
+}
+.app-root.vintage-admin .profile-social-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.app-root.vintage-admin .profile-social-camera {
+    position: absolute;
+    right: -2px;
+    bottom: 0;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--color-surface);
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #fff;
+    cursor: pointer;
+}
+.app-root.vintage-admin .profile-social-summary {
+    display: grid;
+    justify-items: start;
+    gap: 4px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.app-root.vintage-admin .profile-social-summary > strong { font-size: 18px; line-height: 1.4; }
+.app-root.vintage-admin .profile-social-summary > span { color: var(--color-muted); font-size: 13px; }
+.app-root.vintage-admin .profile-social-photo-link {
+    margin-top: 4px;
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.app-root.vintage-admin .profile-social-photo-link:hover { text-decoration: underline; }
+.app-root.vintage-admin .profile-social-identity:has(input:focus-visible) .profile-social-camera {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+.app-root.vintage-admin .profile-social-fields { display: grid; gap: 14px; }
+.app-root.vintage-admin .profile-social-field-row { display: grid; gap: 6px; min-width: 0; }
+.app-root.vintage-admin .profile-social-field {
+    --field-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-soft) 38%, var(--color-surface));
+}
+.app-root.vintage-admin .profile-social-field:focus-within { background: var(--color-surface); }
+.app-root.vintage-admin .profile-social-field-icon { display: flex; flex: 0 0 auto; color: var(--color-muted); }
+.app-root.vintage-admin .profile-social-field-content { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.app-root.vintage-admin .profile-social-field-content > label { color: var(--color-muted); font-size: 11px; font-weight: 500; line-height: 1.5; }
+.app-root.vintage-admin .profile-social-field-content > input {
+    width: 100%;
+    min-width: 0;
+    min-height: 24px;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.app-root.vintage-admin .profile-social-field:has(input:disabled) { opacity: .65; }
+@media (max-width: 480px) {
+    .app-root.vintage-admin .profile-social-identity { gap: 12px; }
+    .app-root.vintage-admin .profile-social-photo { flex-basis: 64px; }
+    .app-root.vintage-admin .profile-social-avatar { width: 64px; height: 64px; font-size: 24px; }
+    .app-root.vintage-admin .profile-social-summary > strong { font-size: 16px; }
+}
+/* Settings navigation follows the workspace's compact menu treatment. */
+.app-root.vintage-admin .settings-actions-slot {
+    position: sticky;
+    bottom: 0;
+    z-index: 55;
+}
+.app-root.vintage-admin .settings-save-bar {
+    position: static;
+    min-height: 58px;
+    padding: 12px;
+    background: var(--color-surface);
+    box-shadow: none;
+    backdrop-filter: none;
+}
+.app-root.vintage-admin .settings-save-bar .btn {
+    min-height: var(--admin-control-height);
+}
+.app-root.vintage-admin .settings-workspace {
+    grid-template-columns: 180px minmax(0, 1fr);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+}
+.app-root.vintage-admin .settings-section-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 12px;
+    background: transparent;
+}
+.app-root.vintage-admin .settings-section-nav > button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    min-height: var(--admin-control-height);
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-muted);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: start;
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.app-root.vintage-admin .settings-section-nav > button:hover {
+    border-color: transparent;
+    background: var(--color-soft);
+    color: var(--color-text);
+}
+.app-root.vintage-admin .settings-section-nav > button.active {
+    border-color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+    font-weight: 600;
+}
+.app-root.vintage-admin .settings-nav-icon {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+}
+.app-root.vintage-admin .settings-nav-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+    .app-root.vintage-admin .settings-workspace {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .app-root.vintage-admin .settings-section-nav {
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 12px;
+        overflow-x: auto;
+    }
+    .app-root.vintage-admin .settings-section-nav > button {
+        flex: 0 0 auto;
+        width: auto;
+        white-space: nowrap;
+    }
+}
+.app-root.vintage-admin {
+    --admin-control-height: 34px;
+    --admin-table-cell-y: 8px;
+    --admin-table-cell-x: 12px;
+    --admin-row-height: 44px;
+    --admin-table-radius: 10px;
+    --admin-dialog-pad: 18px;
+    --admin-dialog-radius: 12px;
+    --admin-section-gap: 16px;
+}
+.app-root.vintage-admin[data-density='comfortable'] {
+    --admin-control-height: 40px;
+    --admin-table-cell-y: 12px;
+    --admin-table-cell-x: 16px;
+    --admin-row-height: 52px;
+    --admin-dialog-pad: 22px;
+}
+.app-root.vintage-admin .panel { border: 1px solid var(--color-border); box-shadow: none; }
+.app-root.vintage-admin .orders-kpi-strip { grid-template-columns: repeat(5, minmax(0,1fr)); }
+.app-root.vintage-admin .order-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 1100px) {
+    .app-root.vintage-admin .orders-kpi-strip { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+.app-root.vintage-admin .panel-heading h2,
+.app-root.vintage-admin .bale-section-heading h2,
+.app-root.vintage-admin .panel > h2 { font-size: 15px; line-height: 22px; font-weight: 600; }
+.app-root.vintage-admin .table-wrap {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--admin-table-radius);
+    background: transparent;
+    box-shadow: none;
+    scrollbar-gutter: auto;
+}
+/* Keep overlay scrollbar thumbs below the final row, including sticky actions. */
+.app-root.vintage-admin :is(.table-wrap, .receipt-sheet-wrap)[data-horizontal-scroll] {
+    padding-block-end: calc(var(--admin-scrollbar-size, 8px) + var(--admin-scrollbar-gap, 8px));
+    background: var(--color-surface);
+    scrollbar-width: thin;
+}
+.app-root.vintage-admin :is(.table-wrap, .receipt-sheet-wrap)::-webkit-scrollbar:horizontal {
+    height: var(--admin-scrollbar-size, 8px);
+}
+/* Tables sit directly in the workspace; their wrappers only provide scrolling.
+   :has also covers tables rendered by shared components inside a page panel. */
+.app-root.vintage-admin .panel:has(table),
+.app-root.vintage-admin .panel:has(.table-wrap),
+.app-root.vintage-admin .settings-workspace:has(.pricing-rule-table),
+.app-root.vintage-admin .settings-work-surface:has(.pricing-rule-table) {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+.app-root.vintage-admin .panel:has(table) .bale-section-heading {
+    padding-inline: 0;
+}
+.app-root.vintage-admin .panel:has(table) > .table-wrap {
+    margin-inline: 0;
+}
+.app-root.vintage-admin .panel:has(table) > .ledger-pagination,
+.app-root.vintage-admin .panel:has(table) > .credit-pagination {
+    padding-inline: 0;
+}
+.app-root.vintage-admin .table-wrap table { width: 100%; margin: 0; border-collapse: separate; border-spacing: 0; color: var(--color-text); background: var(--color-surface); }
+.app-root.vintage-admin .table-search-header {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: nowrap;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 12px;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: var(--admin-table-radius) var(--admin-table-radius) 0 0;
+    background: var(--color-surface);
+    box-shadow: none;
+}
+.app-root.vintage-admin .table-search-header + .table-wrap {
+    margin: 0;
+    border-radius: 0 0 var(--admin-table-radius) var(--admin-table-radius);
+}
+.app-root.vintage-admin .table-search-header > * { margin-block: 0; }
+.app-root.vintage-admin .table-search-header > :is(.search-box,input[type='search']) { flex: 1 1 280px; min-width: 0; }
+.app-root.vintage-admin .table-search-header > .form-field { flex: 1 1 160px; margin: 0; }
+.app-root.vintage-admin .table-search-header :is(input,select,.btn) { font-size: 12px; }
+.app-root.vintage-admin .table-search-header > :is(input,select,.search-box) { height: var(--admin-control-height); min-height: var(--admin-control-height); }
+.app-root.vintage-admin .table-search-header > select { flex: 0 1 180px; min-width: 120px; }
+.app-root.vintage-admin .table-search-header > .btn { flex: 0 0 auto; margin: 0; }
+.app-root.vintage-admin .table-search-header .btn { height: var(--admin-control-height); min-height: var(--admin-control-height); }
+.app-root.vintage-admin .table-search-header .form-field { margin: 0; }
+.app-root.vintage-admin .table-search-header .form-field > :is(input,select,.search-box) { height: var(--admin-control-height); min-height: var(--admin-control-height); }
+.app-root.vintage-admin .table-search-header .search-box { background: var(--color-surface); }
+.app-root.vintage-admin .table-search-header .search-box input { background: transparent; min-width: 0; }
+.app-root.vintage-admin .table-search-header .inline-actions { flex: 0 0 auto; align-items: center; gap: 8px; margin: 0; }
+.app-root.vintage-admin .table-search-header :is(.orders-filter__scroll,.finance-report-filter__scroll) { flex: 1 1 auto; min-width: 0; padding-block: 0; scrollbar-gutter: auto; }
+.app-root.vintage-admin .table-search-header .credit-filter__search { flex: 1 1 320px; }
+.app-root.vintage-admin .table-search-header .credit-filter__bucket { flex: 0 1 180px; }
+.app-root.vintage-admin .table-wrap table th {
+    padding: 10px var(--admin-table-cell-x);
+    background: var(--color-soft);
+    color: var(--color-muted);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--color-border);
+}
+.app-root.vintage-admin .table-wrap table td {
+    padding: var(--admin-table-cell-y) var(--admin-table-cell-x);
+    font-size: 12px;
+    line-height: 18px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-border);
+}
+.app-root.vintage-admin .table-wrap table tbody tr { height: var(--admin-row-height); }
+.app-root.vintage-admin .table-wrap table tbody tr:last-child td { border-bottom: 0; }
+.app-root.vintage-admin .table-wrap table tbody tr:hover { background: var(--color-primary-soft); }
+.app-root.vintage-admin .table-wrap table td strong { font-weight: 600; }
+.app-root.vintage-admin .table-wrap table td small { font-size: 11px; line-height: 16px; margin-top: 2px; color: var(--color-muted); }
+.app-root.vintage-admin .table-wrap table .numeric-cell,
+.app-root.vintage-admin .table-wrap table .money-cell,
+.app-root.vintage-admin .table-wrap table .quantity-cell { text-align: right; font-variant-numeric: tabular-nums; }
+.app-root.vintage-admin .table-wrap .inline-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: nowrap; }
+.app-root.vintage-admin .table-wrap .icon-btn.small { width: 30px; height: 30px; min-width: 30px; border-radius: 5px; }
+.app-root.vintage-admin .table-wrap .text-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 30px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: 5px; background: var(--color-surface); font-size: 12px; text-decoration: none; }
+.app-root.vintage-admin .table-wrap table .table-actions-column,
+.app-root.vintage-admin .table-wrap table .table-actions { width: 1%; white-space: nowrap; text-align: right; }
+.app-root.vintage-admin .ledger-pagination,
+.app-root.vintage-admin .credit-pagination { padding: 12px; font-size: 12px; }
+.app-root.vintage-admin .status { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; padding: 2px 7px; border-radius: 5px; font-size: 10px; line-height: 16px; font-weight: 500; white-space: nowrap; }
+.app-root.vintage-admin .drawer { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+.app-root.vintage-admin .drawer .drawer-header { padding: 14px 18px; border-bottom: 1px solid var(--color-border); }
+.app-root.vintage-admin .drawer .drawer-header h2 { font-size: 18px; font-weight: 600; }
+.app-root.vintage-admin .drawer .drawer-actions { padding: 12px 18px; border-top: 1px solid var(--color-border); gap: 8px; background: var(--color-surface); }
+
+.app-root.vintage-admin .form-field { min-width: 0; gap: 5px; }
+.app-root.vintage-admin .form-field > span,
+.app-root.vintage-admin .form-field > label { color: var(--color-muted); font-size: 11px; line-height: 16px; font-weight: 600; }
+.app-root.vintage-admin .form-field input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+.app-root.vintage-admin .form-field select {
+    min-height: var(--admin-control-height);
+    height: var(--admin-control-height);
+    padding: 0 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: 12px;
+}
+.app-root.vintage-admin .form-field textarea { padding: 8px 10px; min-height: 70px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 12px; }
+.app-root.vintage-admin :is(button, a, summary):focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.app-root.vintage-admin :is(input,select,textarea):disabled { opacity: .6; cursor: not-allowed; }
+.app-root.vintage-admin .btn { min-height: var(--admin-control-height); font-size: 12px; border-radius: 6px; }
+.app-root.vintage-admin .field-error,
+.app-root.vintage-admin .bale-error { color: var(--color-danger); font-size: 11px; line-height: 16px; }
+
+.app-root.vintage-admin .admin-crud-dialog .MuiBackdrop-root { background: rgb(19 29 22 / 48%); backdrop-filter: blur(2px); }
+.app-root.vintage-admin .admin-crud-dialog .MuiDialog-paper { border: 1px solid var(--color-border); border-radius: var(--admin-dialog-radius); background: var(--color-surface); color: var(--color-text); box-shadow: 0 20px 64px rgb(0 0 0 / 22%); font-family: inherit; outline: none; }
+.app-root.vintage-admin .admin-crud-dialog-wide:not(.bale-checkout-dialog) .MuiDialog-paper { max-width: 860px; }
+.app-root.vintage-admin .admin-crud-dialog .admin-crud-dialog-heading { padding: 14px var(--admin-dialog-pad); font-family: inherit; font-size: 18px; line-height: 26px; font-weight: 600; margin: 0; }
+.app-root.vintage-admin .admin-crud-dialog:not(.bale-checkout-dialog) .MuiDialogContent-root { padding: var(--admin-dialog-pad); border-color: var(--color-border); }
+.app-root.vintage-admin .admin-crud-dialog:not(.bale-checkout-dialog) .MuiDialogActions-root { padding: 12px var(--admin-dialog-pad); gap: 8px; background: var(--color-surface); }
+.app-root.vintage-admin .admin-crud-dialog .MuiDialogActions-root > * { margin: 0; }
+.app-root.vintage-admin .admin-crud-dialog .MuiDialogActions-root .btn { min-width: 80px; }
+.app-root.vintage-admin .admin-modal-form { margin: 0; min-width: 0; }
+.app-root.vintage-admin .admin-crud-dialog .admin-form-modal-body,
+.app-root.vintage-admin .admin-crud-dialog .admin-form-grid,
+.app-root.vintage-admin .admin-crud-dialog .payment-method-modal-body { padding: 0; overflow: visible; background: transparent; }
+.app-root.vintage-admin .admin-crud-dialog .crud-grid,
+.app-root.vintage-admin .admin-crud-dialog .admin-form-grid,
+.app-root.vintage-admin .admin-crud-dialog .bale-form-grid { gap: 14px; }
+.app-root.vintage-admin .admin-crud-dialog .admin-form-grid-single { grid-template-columns: minmax(0,1fr); }
+.app-root.vintage-admin .admin-crud-dialog .admin-form-section { padding: 0 0 16px; margin: 0 0 16px; border: 0; border-bottom: 1px solid var(--color-border); border-radius: 0; box-shadow: none; background: transparent; }
+.app-root.vintage-admin .admin-crud-dialog .admin-form-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+.app-root.vintage-admin .admin-crud-dialog .admin-form-section-heading { margin-bottom: 12px; }
+.app-root.vintage-admin .admin-crud-dialog .admin-form-section-heading strong { font-size: 12px; font-weight: 600; }
+.app-root.vintage-admin .admin-crud-dialog .admin-form-section-heading small { font-size: 11px; }
+.app-root.vintage-admin .admin-crud-dialog .payment-section-icon { display: none; }
+.app-root.vintage-admin .admin-crud-dialog .bale-supplier-fields { display: grid; gap: 14px; padding: 0; }
+.app-root.vintage-admin .admin-crud-dialog .bale-purchase-field > span { font-size: 11px; font-weight: 600; line-height: 16px; color: var(--color-muted); }
+.app-root.vintage-admin .admin-crud-dialog .bale-purchase-field :is(input,select) { height: var(--admin-control-height); min-height: var(--admin-control-height); padding: 0 10px; border-radius: 6px; font: inherit; font-size: 12px; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+.app-root.vintage-admin .admin-crud-dialog .bale-supplier-control {
+    height: var(--admin-control-height);
+    min-height: var(--admin-control-height);
+    padding: 0 4px 0 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 12px;
+}
+.app-root.vintage-admin .admin-crud-dialog .bale-supplier-control input,
+.app-root.vintage-admin .admin-crud-dialog .bale-supplier-control input:focus,
+.app-root.vintage-admin .admin-crud-dialog .bale-supplier-control input:focus-visible {
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font: inherit;
+}
+.app-root.vintage-admin .admin-crud-dialog:not(.bale-checkout-dialog) .MuiOutlinedInput-root:not(.MuiInputBase-multiline) { height: var(--admin-control-height); min-height: var(--admin-control-height); }
+.app-root.vintage-admin .admin-crud-dialog .payment-method-modal-body { display: grid; grid-template-columns: 120px minmax(0,1fr); gap: 18px; }
+.app-root.vintage-admin .admin-crud-dialog .payment-method-brand-panel,
+.app-root.vintage-admin .admin-crud-dialog .payment-method-account-panel { padding: 0; background: transparent; border: 0; border-radius: 0; }
+.app-root.vintage-admin .admin-crud-dialog .role-editor { border: 0; padding: 0; background: transparent; }
+.app-root.vintage-admin .admin-crud-dialog .role-editor-header { padding: 0 0 14px; }
+.app-root.vintage-admin .admin-crud-dialog .MuiOutlinedInput-root { color: var(--color-text); background: var(--color-surface); border-radius: 6px; font-family: inherit; font-size: 12px; }
+.app-root.vintage-admin .admin-crud-dialog .MuiOutlinedInput-notchedOutline { border-color: var(--color-border); }
+.app-root.vintage-admin .admin-crud-dialog .MuiOutlinedInput-root .MuiOutlinedInput-input { border: 0; outline: 0; box-shadow: none; background: transparent; }
+.app-root.vintage-admin .admin-crud-dialog .MuiInputLabel-root { color: var(--color-muted); font-family: inherit; }
+.app-root.vintage-admin .admin-crud-dialog .MuiInputLabel-root.Mui-focused { color: var(--color-primary); }
+.app-root.vintage-admin .admin-crud-dialog .MuiAutocomplete-paper { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); font-family: inherit; }
+.app-root.vintage-admin .admin-crud-dialog .MuiAutocomplete-option { font-size: 12px; min-height: 34px; }
+.app-root.vintage-admin .admin-crud-dialog .MuiAutocomplete-option.Mui-focused { background: var(--color-primary-soft); }
+.app-root.vintage-admin .admin-crud-dialog .MuiAutocomplete-noOptions,
+.app-root.vintage-admin .admin-crud-dialog .MuiAutocomplete-loading { color: var(--color-muted); font-size: 12px; }
+.app-root.vintage-admin .admin-crop-dialog .crop-area { height: min(44dvh,360px); position: relative; }
+
+/* Document spreadsheets retain their cell editing geometry. */
+.app-root.vintage-admin .receipt-spreadsheet table th,
+.app-root.vintage-admin .receipt-spreadsheet table td { padding: 6px 9px; }
+@media (max-width: 760px) {
+    .app-root.vintage-admin .orders-kpi-strip { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .app-root.vintage-admin { --admin-control-height: 40px; --admin-dialog-pad: 14px; }
+    .app-root.vintage-admin .admin-crud-dialog .MuiDialog-paper { margin: 12px; width: calc(100% - 24px); max-height: calc(100dvh - 24px); }
+    .app-root.vintage-admin .table-wrap :is(.text-btn,.icon-btn.small) { min-height: 40px; min-width: 40px; }
+    .app-root.vintage-admin .admin-crud-dialog .payment-method-modal-body { grid-template-columns: minmax(0,1fr); }
+    .app-root.vintage-admin .admin-crud-dialog .payment-method-brand-panel { max-width: 120px; }
+    .app-root.vintage-admin .admin-crud-dialog .crud-grid,
+    .app-root.vintage-admin .admin-crud-dialog .admin-form-grid { grid-template-columns: minmax(0,1fr); }
+    .app-root.vintage-admin .admin-crud-dialog :is(.span-2,.full) { grid-column: 1 / -1; }
+    .app-root.vintage-admin .admin-crud-dialog .MuiDialogActions-root { flex-wrap: wrap; }
+    .app-root.vintage-admin .table-search-header { flex-wrap: wrap; padding: 10px; gap: 8px; }
+    .app-root.vintage-admin .table-search-header > :is(.search-box,input[type='search'],.credit-filter__search) { flex-basis: 100%; }
+    .app-root.vintage-admin .table-search-header > select { flex: 1 1 120px; }
+    .app-root.vintage-admin .table-search-header > .form-field { flex: 1 1 100%; }
+    .app-root.vintage-admin .table-search-header :is(.orders-filter__scroll,.finance-report-filter__scroll) { flex-basis: 100%; max-width: 100%; }
+    .app-root.vintage-admin .table-search-header .inline-actions { flex-wrap: wrap; }
+    .app-root.vintage-admin .table-search-header :is(.orders-filter__fields,.finance-report-filter__fields) { display: flex; min-width: 0; width: 100%; padding: 0; }
+    .app-root.vintage-admin .table-search-header .orders-filter__fields > :not(.orders-filter__search),
+    .app-root.vintage-admin .table-search-header .finance-report-filter__fields > :not(.finance-report-filter__search) { display: none; }
+    .app-root.vintage-admin .table-search-header :is(.orders-filter__search,.finance-report-filter__search) { flex: 1 1 100%; min-width: 0; width: 100%; }
+}
+@media (prefers-reduced-transparency: reduce) {
+    .app-root.vintage-admin .admin-crud-dialog .MuiBackdrop-root { backdrop-filter: none; }
+}
+.app-root.vintage-admin .orders-page-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.app-root.vintage-admin .orders-drawer .MuiDrawer-paper {
+    width: min(400px, 100%);
+    box-sizing: border-box;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-left: 1px solid var(--color-border);
+}
+
+.app-root.vintage-admin .orders-drawer-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+.app-root.vintage-admin .orders-drawer .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.app-root.vintage-admin .orders-drawer h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.app-root.vintage-admin .orders-drawer-fields {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    padding: 18px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.app-root.vintage-admin .orders-drawer-dates {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.app-root.vintage-admin .orders-drawer .form-field {
+    min-width: 0;
+    margin: 0;
+}
+
+.app-root.vintage-admin .orders-drawer .drawer-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 760px) {
+    .app-root.vintage-admin .orders-page > .admin-page-heading {
+        align-items: flex-start;
+        text-align: left;
+    }
+    .app-root.vintage-admin .orders-page-actions {
+        flex-direction: row;
+        width: 100%;
+    }
+    .app-root.vintage-admin .orders-page-actions > *,
+    .app-root.vintage-admin .orders-page-actions .btn {
+        flex: 0 0 auto;
+        width: auto;
+    }
+}
+
+.app-root.vintage-admin .order-detail-page > .admin-page-heading .eyebrow { display: none; }
+.app-root.vintage-admin .order-detail-page > .admin-page-heading { margin-bottom: 10px; }
+.app-root.vintage-admin .order-detail-actions { flex-wrap: wrap; gap: 8px; }
+.app-root.vintage-admin .order-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    margin-bottom: 20px;
+    color: var(--color-muted);
+    font-size: 12px;
+}
+.app-root.vintage-admin .order-detail-meta .back-link { margin: 0; }
+.app-root.vintage-admin .order-detail-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.app-root.vintage-admin .order-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+    gap: 24px;
+}
+.app-root.vintage-admin .order-detail-main { min-width: 0; }
+.app-root.vintage-admin .order-detail-main td a { color: var(--color-primary); text-decoration: none; }
+.app-root.vintage-admin .order-detail-main td a:hover { text-decoration: underline; }
+.app-root.vintage-admin .order-section-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.app-root.vintage-admin .order-summary {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.app-root.vintage-admin .order-summary-section { padding: 16px; }
+.app-root.vintage-admin .order-summary-section + .order-summary-section { border-top: 1px solid var(--color-border); }
+.app-root.vintage-admin .order-summary-section p { margin: 4px 0 0; }
+.app-root.vintage-admin .order-summary .detail-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 5px 0; }
+.app-root.vintage-admin .order-summary .detail-row strong { text-align: right; font-variant-numeric: tabular-nums; }
+.app-root.vintage-admin .order-summary-total { border-top: 1px solid var(--color-border); margin-top: 6px; }
+.app-root.vintage-admin .order-summary .order-summary-total { padding: 12px 0 8px; font-size: 15px; }
+.app-root.vintage-admin .order-credit-summary { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); }
+.app-root.vintage-admin .order-detail-notes { margin-top: 24px; }
+.app-root.vintage-admin .order-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.app-root.vintage-admin .order-section-heading .order-section-title { margin: 0; }
+.app-root.vintage-admin .order-detail-notes p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; }
+.app-root.vintage-admin .order-payment-account { display: grid; gap: 4px; margin-bottom: 12px; }
+.app-root.vintage-admin .order-payment-proof { display: block; width: 100%; max-height: 240px; object-fit: contain; border-radius: 6px; margin-bottom: 12px; }
+.app-root.vintage-admin .order-cancel-action .text-btn { color: var(--color-danger); }
+@media (max-width: 1000px) {
+    .app-root.vintage-admin .order-detail-grid { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; }
+}
+@media (max-width: 760px) {
+    .app-root.vintage-admin .order-detail-page > .admin-page-heading { align-items: flex-start; text-align: left; }
+    .app-root.vintage-admin .order-detail-actions { flex-direction: row; justify-content: flex-start; }
+    .app-root.vintage-admin .order-detail-actions .btn { width: auto; }
+    .app-root.vintage-admin .order-detail-meta { gap: 10px 14px; }
+    .app-root.vintage-admin .order-detail-badges { margin-left: 0; width: 100%; }
+    .app-root.vintage-admin .order-detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
+.app-root.vintage-admin .orders-summary { margin-bottom: 18px; }
+.app-root.vintage-admin .orders-summary-caption { margin: 0 0 8px; font-size: 11px; color: var(--color-muted); }
+.app-root.vintage-admin .orders-summary-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.app-root.vintage-admin .orders-summary-card { cursor: default; }
+.app-root.vintage-admin .orders-summary-card:hover { transform: none; border-color: var(--color-border); }
+@media (max-width: 1100px) {
+    .app-root.vintage-admin .orders-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .app-root.vintage-admin .orders-summary-revenue { grid-column: span 2; }
+}
+@media (max-width: 760px) {
+    .app-root.vintage-admin .orders-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.app-root.vintage-admin .credit-page-actions { flex-wrap: wrap; gap: 8px; }
+.app-root.vintage-admin .collection-history-filters { align-items: flex-end; flex-wrap: wrap; }
+.app-root.vintage-admin .collection-history-filters .collection-history-search { flex: 1 1 260px; min-width: 180px; }
+.app-root.vintage-admin .collection-history-filters > .form-field:not(.collection-history-search) { flex: 0 1 150px; min-width: 130px; }
+.app-root.vintage-admin .collection-history-filters .inline-actions { flex-shrink: 0; }
+.app-root.vintage-admin .collection-customer-link { font-weight: 600; color: var(--color-text); text-decoration: none; }
+.app-root.vintage-admin .collection-customer-link:hover { color: var(--color-primary); text-decoration: underline; }
+@media (max-width: 760px) {
+    .app-root.vintage-admin .collection-history-filters > .form-field:not(.collection-history-search) { flex: 1 1 130px; }
+}
+.app-root.vintage-admin .admin-page-actions,
+.app-root.vintage-admin .admin-filter-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+.app-root.vintage-admin .admin-filter-actions { margin-bottom: 14px; }
+.app-root.vintage-admin .admin-filter-drawer .admin-filter-checkbox { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.app-root.vintage-admin .admin-filter-drawer .admin-filter-checkbox input { width: 16px; height: 16px; min-height: 0; }
+.app-root.vintage-admin .admin-filter-drawer .orders-drawer-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.app-root.vintage-admin .admin-filter-drawer .form-field { grid-column: 1 / -1; }
+.app-root.vintage-admin .admin-filter-drawer .admin-filter-date { grid-column: auto; }
+@media (max-width: 760px) {
+    .app-root.vintage-admin .admin-page-actions,
+    .app-root.vintage-admin .admin-filter-actions { flex-direction: row; justify-content: flex-start; width: 100%; }
+    .app-root.vintage-admin .admin-page-actions .inline-actions { flex-direction: row; flex-wrap: wrap; width: auto; }
+    .app-root.vintage-admin .admin-page-actions .btn,
+    .app-root.vintage-admin .admin-filter-actions .btn { width: auto; }
+}
+.app-root.vintage-admin .detail-table-row { cursor: pointer; }
+.app-root.vintage-admin .detail-table-row:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.app-root.vintage-admin .detail-table-row:hover > td { background: var(--color-primary-soft); }
+.app-root.vintage-admin .bale-workspace:has(.finance-page-content) { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.app-root.vintage-admin .finance-page-content { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; min-width: 0; }
+.app-root.vintage-admin .finance-page-content > section { min-width: 0; }
+.app-root.vintage-admin .finance-summary-scope { margin: 0 0 8px; font-size: 11px; color: var(--color-muted); }
+.app-root.vintage-admin .finance-summary-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.app-root.vintage-admin .finance-summary-card { cursor: default; }
+.app-root.vintage-admin .finance-summary-card:hover { transform: none; border-color: var(--color-border); }
+.app-root.vintage-admin .finance-summary-card > p { color: var(--color-muted); }
+.app-root.vintage-admin .finance-section-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; }
+.app-root.vintage-admin .finance-section-heading h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.app-root.vintage-admin .finance-section-heading small { color: var(--color-muted); font-size: 11px; }
+.app-root.vintage-admin .finance-cash-ledger td:last-child > .btn { margin-left: 8px; }
+@media (max-width: 1200px) {
+    .app-root.vintage-admin .finance-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+    .app-root.vintage-admin .finance-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .app-root.vintage-admin .finance-page-content { gap: 18px; }
+    .app-root.vintage-admin .bale-workspace:has(.finance-page-content) > .admin-page-heading { align-items: flex-start; text-align: left; }
+    .app-root.vintage-admin .finance-cash-ledger td:last-child > .btn { margin: 6px 0 0; }
+}
+.app-root.vintage-admin .bale-results-caption { margin: 0 0 10px; color: var(--color-muted); font-size: 11px; line-height: 1.6; }
+.app-root.vintage-admin .bale-workspace:has(.bale-results-table) { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.app-root.vintage-admin .bale-workspace:has(.bale-results-table) > .panel { min-width: 0; }
+.app-root.vintage-admin .bale-results-table { min-width: 1000px; }
+.app-root.vintage-admin .bale-results-table .bale-result-loss strong { color: var(--color-danger); }
+.app-root.vintage-admin .bale-results-table .bale-result-gain strong { color: #168255; }
+.app-root.vintage-admin .sales-reports-scope { margin: -6px 0 14px; color: var(--color-muted); font-size: 12px; }
+.app-root.vintage-admin .sales-reports-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.app-root.vintage-admin .sales-chart-panel { min-width: 0; padding: 16px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); }
+.app-root.vintage-admin .sales-chart-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.app-root.vintage-admin .sales-chart-heading h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.app-root.vintage-admin .sales-chart-heading > span { color: var(--color-muted); font-size: 12px; }
+.app-root.vintage-admin .sales-chart-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.app-root.vintage-admin .sales-chart-legend button { min-width: 0; padding: 8px 10px; border: 1px solid var(--color-border); border-radius: 6px; background: var(--color-bg); color: var(--color-text); text-align: left; cursor: pointer; opacity: .45; }
+.app-root.vintage-admin .sales-chart-legend button.is-visible { opacity: 1; }
+.app-root.vintage-admin .sales-chart-legend button:hover { border-color: var(--series-color); }
+.app-root.vintage-admin .sales-chart-legend button > span { display: flex; align-items: center; gap: 6px; color: var(--color-muted); font-size: 11px; }
+.app-root.vintage-admin .sales-chart-legend i,
+.app-root.vintage-admin .sales-chart-readout i { display: inline-block; flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--series-color); }
+.app-root.vintage-admin .sales-chart-legend strong { display: block; margin-top: 4px; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.app-root.vintage-admin .sales-chart-plot { position: relative; min-width: 0; }
+.app-root.vintage-admin .sales-chart-plot svg { display: block; width: 100%; height: auto; outline-offset: 2px; }
+.app-root.vintage-admin .sales-chart-plot svg:focus-visible { outline: 2px solid var(--color-primary); }
+.app-root.vintage-admin .sales-chart-grid { stroke: var(--color-border); stroke-dasharray: 3 4; }
+.app-root.vintage-admin .sales-chart-zero { stroke: var(--color-muted); stroke-opacity: .6; }
+.app-root.vintage-admin .sales-chart-line { fill: none; stroke-width: 2.3; stroke-linejoin: round; stroke-linecap: round; }
+.app-root.vintage-admin .sales-chart-y-label,
+.app-root.vintage-admin .sales-chart-x-label { fill: var(--color-muted); font-size: 10px; }
+.app-root.vintage-admin .sales-chart-y-label { text-anchor: end; }
+.app-root.vintage-admin .sales-chart-x-label { text-anchor: middle; }
+.app-root.vintage-admin .sales-chart-guide { stroke: var(--color-muted); stroke-dasharray: 3 3; }
+.app-root.vintage-admin .sales-chart-empty { position: absolute; inset: 35% 0 auto; text-align: center; font-size: 12px; color: var(--color-muted); pointer-events: none; }
+.app-root.vintage-admin .sales-chart-readout { min-height: 76px; padding-top: 12px; margin-top: 6px; border-top: 1px solid var(--color-border); font-size: 11px; color: var(--color-muted); }
+.app-root.vintage-admin .sales-chart-readout > strong { display: block; margin-bottom: 6px; color: var(--color-text); font-size: 12px; font-weight: 600; }
+.app-root.vintage-admin .sales-chart-readout > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; }
+.app-root.vintage-admin .sales-chart-readout span { overflow-wrap: anywhere; }
+.app-root.vintage-admin .sales-chart-readout i { margin-right: 4px; }
+.app-root.vintage-admin .sales-chart-readout b { color: var(--color-text); font-weight: 600; }
+.app-root.vintage-admin .sales-reports-note { margin: 14px 0 0; color: var(--color-muted); font-size: 11px; line-height: 1.7; }
+@media (max-width: 1050px) {
+    .app-root.vintage-admin .sales-reports-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+    .app-root.vintage-admin .sales-reports-page > .admin-page-heading { text-align: left; align-items: flex-start; }
+    .app-root.vintage-admin .sales-chart-panel { padding: 14px; }
+    .app-root.vintage-admin .sales-chart-legend strong { font-size: 14px; }
+}
+
+/* Role selection and access overview. */
+.app-root.vintage-admin .roles-workspace { padding: 18px; }
+.app-root.vintage-admin .roles-page .role-permission-layout { grid-template-columns: minmax(190px,250px) minmax(0,1fr); gap: 24px; }
+.app-root.vintage-admin .roles-page .role-list { gap: 6px; padding-right: 18px; }
+.app-root.vintage-admin .roles-page .role-list-item { min-height: 62px; padding: 10px 12px; border-radius: 9px; }
+.app-root.vintage-admin .roles-page .role-list-item strong { font-size: 14px; }
+.app-root.vintage-admin .roles-page .role-list-item small { font-size: 12px; }
+.app-root.vintage-admin .role-permission-count { display: grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 7px; background: var(--color-bg); }
+.app-root.vintage-admin .role-overview { min-width: 0; display: grid; gap: 18px; }
+.app-root.vintage-admin .role-overview-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.app-root.vintage-admin .role-overview-heading h2 { margin: 0 0 8px; font-size: 20px; }
+.app-root.vintage-admin .role-overview-metrics { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; }
+.app-root.vintage-admin .role-overview-metrics strong { font-size: 18px; }
+.app-root.vintage-admin .role-overview-groups { display: flex; flex-wrap: wrap; gap: 8px; }
+.app-root.vintage-admin .role-access-chip { display: inline-flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid var(--color-border); border-radius: 7px; font-size: 12px; }
+.app-root.vintage-admin .role-access-chip strong { color: var(--color-primary); }
+.app-root.vintage-admin .role-overview-actions { display: flex; justify-content: flex-end; padding-top: 14px; border-top: 1px solid var(--color-border); }
+.app-root.vintage-admin .role-overview-actions > * { width: auto; }
+@media (max-width: 760px) {
+ .app-root.vintage-admin .roles-page .role-permission-layout { grid-template-columns: 1fr; gap: 18px; }
+ .app-root.vintage-admin .roles-page .role-list { grid-template-columns: repeat(auto-fit,minmax(155px,1fr)); border-right: 0; border-bottom: 1px solid var(--color-border); padding: 0 0 14px; }
+ .app-root.vintage-admin .roles-workspace { padding: 14px; }
+}
+
+.app-root.vintage-admin .role-overview > .permission-browser { min-width: 0; }
+.app-root.vintage-admin .role-overview .permission-help { display: none; }
+.app-root.vintage-admin .role-overview .permission-group-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.app-root.vintage-admin .role-overview .permission-group { margin: 0; min-width: 0; }
+.app-root.vintage-admin .role-overview .permission-option.static { padding: 8px; }
+.app-root.vintage-admin .role-overview .permission-copy code { display: none; }
+.app-root.vintage-admin .role-overview-description { margin: 0; font-size: 13px; }
+
+/* Slightly denser role navigation. */
+.app-root.vintage-admin .roles-page .role-list { gap: 4px; }
+.app-root.vintage-admin .roles-page .role-list-item { min-height: 50px; padding: 7px 10px; }
+.app-root.vintage-admin .roles-page .role-list-item > span { gap: 1px; }
+.app-root.vintage-admin .roles-page .role-permission-count { min-width: 24px; height: 24px; }
+/* Dashboard follows the shared summary and flat table layout. */
+.app-root.vintage-admin .dashboard-summary { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; margin-bottom: 24px; }
+.app-root.vintage-admin .dashboard-summary .metric-card { min-width: 0; }
+.app-root.vintage-admin .dashboard-summary .metric-card > strong { font-size: clamp(18px,1.7vw,25px); overflow-wrap: anywhere; }
+.app-root.vintage-admin .dashboard-section { margin: 0 0 24px; min-width: 0; }
+.app-root.vintage-admin .dashboard-section-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.app-root.vintage-admin .dashboard-section-header h2 { margin: 0; font-size: 17px; }
+.app-root.vintage-admin .dashboard-section-header .inline-actions { flex-wrap: wrap; }
+@media (max-width: 1200px) { .app-root.vintage-admin .dashboard-summary { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media (max-width: 650px) { .app-root.vintage-admin .dashboard-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
+/* Customer details prioritize outstanding credit and its history. */
+.app-root.vintage-admin .customer-detail-page .customer-credit-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 14px; }
+.app-root.vintage-admin .customer-detail-page .customer-credit-terms { display: flex; flex-wrap: wrap; gap: 10px 24px; font-size: 13px; }
+.app-root.vintage-admin .customer-detail-page .customer-credit-summary .metric-card { padding: 16px; }
+.app-root.vintage-admin .customer-detail-page .customer-credit-summary .metric-card p { display: none; }
+.app-root.vintage-admin .customer-detail-page .customer-credit-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.app-root.vintage-admin .customer-detail-page .customer-credit-actions > section { width: 100%; min-width: 0; }
+.app-root.vintage-admin .customer-detail-page section:has(> .table-wrap) { background: transparent; border: 0; box-shadow: none; padding: 0; }
+.app-root.vintage-admin .customer-detail-page .customer-section-title { font-size: 17px; margin: 20px 0 12px; }
+@media(max-width: 550px) { .app-root.vintage-admin .customer-detail-page .customer-credit-summary { grid-template-columns: 1fr; } }
+
+/* Align customer actions with the page header and keep summaries outside panels. */
+.app-root.vintage-admin .customer-header-actions { justify-content: flex-end; flex-wrap: wrap; }
+.app-root.vintage-admin .customer-profile-strip { margin-bottom: 18px; padding: 14px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; }
+.app-root.vintage-admin .customer-profile-strip .stack-row { justify-content: space-between; gap: 12px; }
+.app-root.vintage-admin .customer-credit-overview { margin-bottom: 24px; }
+.app-root.vintage-admin .customer-credit-overview .customer-credit-summary { margin-top: 12px; }
+.app-root.vintage-admin .customer-credit-overview .metric-card { margin: 0; min-width: 0; }
+.app-root.vintage-admin .customer-credit-overview .metric-card strong { font-size: clamp(22px,2vw,30px); }
+
+.app-root.vintage-admin .customer-heading-details { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin-top: 12px; font-size: 13px; color: var(--color-text-muted); }
+.app-root.vintage-admin .customer-heading-details > span { display: inline-flex; align-items: center; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
+.app-root.vintage-admin .customer-heading-details > span > svg { flex-shrink: 0; }
+/* Compact locale control, matched to the vintage app bar. */
+
+/* Bale details share the standard detail-page hierarchy. */
+.app-root.vintage-admin .bale-heading-details { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; margin-top: 12px; font-size: 13px; }
+.app-root.vintage-admin .bale-heading-details > span { display: inline-flex; align-items: center; gap: 6px; }
+.app-root.vintage-admin .bale-detail-summary { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 12px; }
+.app-root.vintage-admin .bale-detail-summary .metric-card { min-width: 0; }
+.app-root.vintage-admin .bale-detail-summary .metric-card > strong { font-size: clamp(18px,1.6vw,26px); overflow-wrap: anywhere; }
+.app-root.vintage-admin .bale-detail-facts { display: flex; flex-wrap: wrap; gap: 10px 24px; margin: 12px 0 24px; font-size: 12px; }
+.app-root.vintage-admin .bale-detail-facts strong { margin-left: 6px; }
+.app-root.vintage-admin .bale-detail-section { margin: 0 0 24px; min-width: 0; }
+.app-root.vintage-admin .bale-detail-section .bale-section-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.app-root.vintage-admin .bale-detail-section h2 { margin: 0; font-size: 17px; }
+.app-root.vintage-admin .bale-detail-notes { margin: 0 0 16px; font-size: 13px; }
+@media(max-width: 1150px) { .app-root.vintage-admin .bale-detail-summary { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width: 600px) { .app-root.vintage-admin .bale-detail-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+/* Give permission searches a clear rhythm in both details and dialogs. */
+.app-root.vintage-admin .permission-browser > .permission-search-area {
+    padding: 4px 0 16px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--color-border);
+}
+.app-root.vintage-admin .permission-search-area > .form-field {
+    display: grid;
+    gap: 7px;
+    margin: 0;
+}
+.app-root.vintage-admin .permission-search-area > .form-field > input {
+    width: 100%;
+    margin: 0;
+}
+.app-root.vintage-admin .permission-search-area > .permission-help {
+    margin: 10px 0 0;
+    line-height: 1.5;
+}
+.app-root.vintage-admin .role-overview .permission-search-area {
+    padding-top: 2px;
+}
+.app-root.vintage-admin .role-overview .permission-browser > .permission-help[role="status"] {
+    display: block;
+}
+.app-root.vintage-admin .settings-general-assets {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--color-border);
+}
+.app-root.vintage-admin .settings-general-assets .settings-asset-row { min-width: 0; margin: 0; }
+@media (max-width: 800px) {
+    .app-root.vintage-admin .settings-general-assets { grid-template-columns: 1fr; }
+}

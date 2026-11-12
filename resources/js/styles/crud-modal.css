@@ -1,0 +1,31 @@
+.app-root .admin-crud-dialog .MuiDialog-paper {
+    background: var(--color-surface, #fff);
+    color: var(--color-text, #28241f);
+    border-radius: 14px;
+    max-height: calc(100dvh - 32px);
+}
+.app-root .admin-crud-dialog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 18px;
+}
+.app-root .admin-crud-dialog .MuiDialogContent-root { padding: 20px; }
+.app-root .admin-crud-dialog .MuiDialogActions-root { padding: 14px 20px; gap: 8px; }
+.app-root .admin-crud-dialog form { min-width: 0; }
+.app-root .admin-crud-dialog form > .form-field { margin-bottom: 14px; }
+.app-root .admin-crud-dialog form > button { margin-top: 14px; }
+.app-root .admin-crud-dialog .admin-content { padding: 0; }
+.app-root .admin-crud-dialog .sticky-toolbar { position: static; }
+.app-root .admin-crud-dialog .panel { max-width: 100%; }
+.app-root .customer-create-modal .customer-create-drawer-body { overflow-y: auto; min-height: 0; }
+.app-root .customer-create-modal .drawer-header,
+.app-root .customer-create-modal .drawer-actions { flex-shrink: 0; }
+@media (max-width: 600px) {
+    .app-root .admin-crud-dialog .MuiDialog-paper { margin: 12px; width: calc(100% - 24px); }
+    .app-root .admin-crud-dialog .MuiDialogContent-root { padding: 14px; }
+    .app-root .admin-crud-dialog .bale-form-grid,
+    .app-root .admin-crud-dialog .crud-grid { grid-template-columns: minmax(0, 1fr); }
+    .app-root .admin-crud-dialog .span-2 { grid-column: auto; }
+}

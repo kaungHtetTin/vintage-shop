@@ -1,0 +1,290 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\Location;
+use App\Services\OrderManagementService;
+use App\Services\OrderPaymentService;
+use App\Services\OrderVoucherService;
+use App\Services\ExcelExportService;
+use App\Services\AuditLogService;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
+use App\Support\Spa;
+
+class OrderController extends Controller
+{
+    public function index(Request $request, OrderManagementService $orderManagementService)
+    {
+        $status = $request->string('status')->toString();
+        $paymentStatus = $request->string('payment_status')->toString();
+        $saleType = $request->string('sale_type')->toString();
+        $saleType = in_array($saleType, ['online', 'in_store'], true) ? $saleType : '';
+        $search = trim($request->string('q')->toString());
+        $tab = $request->string('tab')->toString();
+        $tab = in_array($tab, ['online', 'not_delivered', 'delivered', 'cancelled'], true) ? $tab : '';
+        $from = $request->date('from');
+        $to = $request->date('to');
+        $locationId = $request->integer('location_id');
+        $accessibleLocationIds = array_map('intval', $request->user()->accessibleLocationIds());
+        abort_if($locationId && ! in_array($locationId, $accessibleLocationIds, true), 403);
+
+        $query = Order::query()->whereIn('location_id', $locationId ? [$locationId] : $accessibleLocationIds)
+            ->with(['user:id,name,email,phone', 'items'])
+            ->withCount('items');
+
+        if ($tab === 'online') {
+            $query->where('is_online_sale', true);
+        } elseif ($tab) {
+            $query->forStatus($tab);
+        }
+
+        $orders = $query
+            ->when($saleType, fn ($q) => $q->where('is_online_sale', $saleType === 'online'))
+            ->when($status, fn ($q) => $q->forStatus($status))
+            ->when($paymentStatus, fn ($q) => $q->where('payment_status', $paymentStatus))
+            ->when($from, fn ($q) => $q->whereDate('created_at', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('created_at', '<=', $to))
+            ->when($search, function ($q) use ($search) {
+                $like = '%'.$search.'%';
+                $q->where(function ($inner) use ($like) {
+                    $inner->where('order_number', 'like', $like)
+                        ->orWhere('receipt_number', 'like', $like)
+                        ->orWhere('receiver_name', 'like', $like)
+                        ->orWhere('receiver_phone', 'like', $like)
+                        ->orWhereHas('user', function ($u) use ($like) {
+                            $u->where('name', 'like', $like)
+                                ->orWhere('email', 'like', $like)
+                                ->orWhere('phone', 'like', $like);
+                        });
+                });
+            })
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+        $user = $request->user();
+
+        return Spa::render('Admin/Orders/Index', [
+            'orders' => $orders,
+            'stats' => $this->orderStats($locationId ? [$locationId] : $accessibleLocationIds),
+            'filters' => [
+                'status' => $status ?: null,
+                'sale_type' => $saleType ?: null,
+                'payment_status' => $paymentStatus ?: null,
+                'q' => $search ?: null,
+                'tab' => $tab ?: null,
+                'location_id' => $locationId ?: null,
+                'from' => $from?->toDateString(),
+                'to' => $to?->toDateString(),
+            ],
+            'locations' => Location::query()->whereIn('id', $accessibleLocationIds)->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
+            'canReviewPayments' => $user->hasAdminPermission('orders.review_payment'),
+            'canManageOrders' => $user->hasAdminPermission('orders.manage'),
+            'canCancelOrders' => $user->hasAdminPermission('orders.cancel'),
+        ]);
+    }
+
+    public function export(Request $request, ExcelExportService $excel)
+    {
+        $locationId = $request->integer('location_id');
+        $accessibleLocationIds = array_map('intval', $request->user()->accessibleLocationIds());
+        abort_if($locationId && ! in_array($locationId, $accessibleLocationIds, true), 403);
+
+        $query = Order::query()
+            ->whereIn('location_id', $locationId ? [$locationId] : $accessibleLocationIds)
+            ->with(['user:id,name,email,phone', 'location:id,code,name'])
+            ->withCount('items');
+        $this->applyFilters($query, $request);
+
+        $rows = $query->orderBy('id')->lazyById(500)->map(fn ($order) => [$order->order_number, $order->receipt_number, $order->created_at?->format('Y-m-d H:i:s'), $order->location?->name, $order->is_online_sale ? 'Online' : 'In-store', $order->receiver_name ?: $order->user?->name, $order->receiver_phone ?: $order->user?->phone, $order->user?->email, $order->items_count, $order->total_amount, $order->discount_amount, $order->shipping_fee, $order->final_amount, $order->payment_method, $order->payment_status, $order->order_status]);
+        $path = $excel->create('Orders', ['Order number', 'Receipt number', 'Date', 'Store', 'Channel', 'Customer', 'Phone', 'Email', 'Items', 'Subtotal', 'Discount', 'Additional charges', 'Total', 'Payment method', 'Payment status', 'Order status'], $rows);
+        return response()->download($path, 'orders-'.now()->format('Ymd-His').'.xlsx', ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])->deleteFileAfterSend(true);
+    }
+
+    private function applyFilters($query, Request $request): void
+    {
+        $status = $request->string('status')->toString();
+        $paymentStatus = $request->string('payment_status')->toString();
+        $saleType = $request->string('sale_type')->toString();
+        $saleType = in_array($saleType, ['online', 'in_store'], true) ? $saleType : '';
+        $search = trim($request->string('q')->toString());
+        $tab = $request->string('tab')->toString();
+        $from = $request->date('from');
+        $to = $request->date('to');
+        if ($tab === 'online') $query->where('is_online_sale', true);
+        elseif (in_array($tab, ['not_delivered', 'delivered', 'cancelled'], true)) $query->forStatus($tab);
+        $query->when($saleType, fn ($q) => $q->where('is_online_sale', $saleType === 'online'))
+            ->when($status, fn ($q) => $q->forStatus($status))
+            ->when($paymentStatus, fn ($q) => $q->where('payment_status', $paymentStatus))
+            ->when($from, fn ($q) => $q->whereDate('created_at', '>=', $from))
+            ->when($to, fn ($q) => $q->whereDate('created_at', '<=', $to))
+            ->when($search, function ($q) use ($search) {
+                $like = '%'.$search.'%';
+                $q->where(fn ($inner) => $inner->where('order_number', 'like', $like)->orWhere('receipt_number', 'like', $like)->orWhere('receiver_name', 'like', $like)->orWhere('receiver_phone', 'like', $like)->orWhereHas('user', fn ($u) => $u->where('name', 'like', $like)->orWhere('email', 'like', $like)->orWhere('phone', 'like', $like)));
+            });
+    }
+
+    private function orderStats(array $locationIds): array
+    {
+        $orders = Order::query()->whereIn('location_id', $locationIds);
+        return [
+            'total' => (clone $orders)->count(),
+            'pending_payment' => (clone $orders)->where('status', '!=', 'cancelled')->whereIn('payment_status', ['pending', 'pending_review', 'unpaid', 'partially_paid'])->count(),
+            'not_delivered' => (clone $orders)->forStatus('not_delivered')->count(),
+            'delivered' => (clone $orders)->forStatus('delivered')->count(),
+            'cancelled' => (clone $orders)->forStatus('cancelled')->count(),
+            'revenue_paid' => (float) (clone $orders)->recognizedSale()->where('payment_status', 'paid')->sum('final_amount'),
+        ];
+    }
+
+    public function show(Request $request, Order $order, OrderVoucherService $voucherService)
+    {
+        $order->load([
+            'user:id,name,email,phone',
+            'coupon',
+            'items.product',
+            'items.unit',
+            'items.focUnit',
+            'payments',
+            'paymentReviewer:id,name',
+            'selectedPaymentMethod',
+        ]);
+
+        $user = $request->user();
+
+        return Spa::render('Admin/Orders/Show', [
+            'order' => $order,
+            'voucherLinks' => [
+                'print' => route('admin.orders.voucher.show', $order),
+                'pdf' => route('admin.orders.voucher.pdf', $order),
+                'public' => route('public.invoices.show', $voucherService->ensurePublicToken($order)),
+            ],
+            'canReviewPayments' => $user->hasAdminPermission('orders.review_payment'),
+            'canManageOrders' => $user->hasAdminPermission('orders.manage'),
+            'canCancelOrders' => $user->hasAdminPermission('orders.cancel'),
+        ]);
+    }
+
+    public function updateDelivery(Request $request, Order $order, AuditLogService $audit)
+    {
+        $data = $request->validate(['delivered' => ['required', 'boolean']]);
+        DB::transaction(function () use ($request, $order, $audit, $data) {
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            abort_unless($order->location && $request->user()->canAccessLocation($order->location), 403);
+            if (! $order->is_online_sale || $order->status === 'cancelled') {
+                throw ValidationException::withMessages(['delivery' => \App\Support\UiText::get('Delivery can only be updated for an active online sale.')]);
+            }
+            $delivered = (bool) $data['delivered'];
+            if ((bool) $order->delivered_at === $delivered) return;
+            $order->update(['delivered_at' => $delivered ? now() : null, 'delivered_by' => $delivered ? $request->user()->id : null]);
+            $audit->record('order.delivery_updated', $order, ['delivered' => $delivered], $request);
+        });
+        return back()->with('success', $data['delivered'] ? \App\Support\UiText::get('Sale marked delivered.') : \App\Support\UiText::get('Sale marked not delivered.'));
+    }
+
+    public function confirmPayment(Request $request, Order $order, OrderPaymentService $orderPaymentService)
+    {
+        $validated = $request->validate([
+            'discount_type' => ['nullable', 'required_with:discount_value', 'string', 'in:percent,amount'],
+            'discount_value' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            $orderPaymentService->confirmPayment($order, $request->user(), $validated);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('success', \App\Support\UiText::get('Payment confirmed. Order completed and stock deducted.'));
+    }
+
+    public function rejectPayment(Request $request, Order $order, OrderPaymentService $orderPaymentService)
+    {
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $orderPaymentService->rejectPayment($order, $request->user(), $validated['reason'] ?? null);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('success', \App\Support\UiText::get('Payment rejected and order cancelled. The customer will see your message on their order page.'));
+    }
+
+    public function updateNotes(Request $request, Order $order, OrderManagementService $orderManagementService)
+    {
+        $validated = $request->validate([
+            'admin_notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $orderManagementService->updateAdminNotes($order, $validated['admin_notes'] ?? null);
+
+        return back()->with('success', \App\Support\UiText::get('Admin notes saved.'));
+    }
+
+    public function cancel(Request $request, Order $order, OrderManagementService $orderManagementService)
+    {
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $hadPaidStock = $order->payment_status === 'paid' || (float) $order->credit_amount > 0;
+
+        try {
+            $orderManagementService->cancelOrder(
+                $order,
+                $request->user(),
+                $validated['reason'] ?? null,
+                restoreStock: $hadPaidStock,
+            );
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        $message = 'Order cancelled.'.($hadPaidStock ? ' Stock has been restored.' : '')
+            .(($order->payment_status === 'paid' || (float) $order->paid_amount > 0) ? ' Collected payments are retained; any refund due must still be paid.' : '');
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('success', $message);
+    }
+
+    public function destroy(Request $request, Order $order, OrderManagementService $orderManagementService)
+    {
+        if ($order->status === 'cancelled') {
+            return back()->withErrors([
+                'order' => 'This order is already cancelled. Stock and related records will not be reversed again.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        try {
+            $orderManagementService->deleteOrderAsReturn($order, $request->user(), $validated['reason'] ?? null);
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors());
+        }
+
+        $retained = Order::query()->whereKey($order->id)->exists();
+        $message = $retained
+            ? 'Sale cancelled. Stock and outstanding credit reversed; payment history retained for audit. Any refund due must still be paid.'
+            : 'Order deleted. Stock and finance records were reversed.';
+        if ($request->header('X-SPA') === 'true') {
+            return response()->json(['deleted' => ! $retained, 'redirect' => route('admin.orders.index'), 'message' => $message]);
+        }
+
+        return redirect()->route('admin.orders.index')->with('success', $message);
+    }
+}

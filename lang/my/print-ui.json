@@ -1,0 +1,23 @@
+{
+  "Customer Credit Statement": "ဖောက်သည်အကြွေးစာရင်းရှင်းတမ်း",
+  "Opening": "အဖွင့်လက်ကျန်",
+  "Purchases": "ဝယ်ယူမှုများ",
+  "Payments / credits": "ပေးချေမှု / အကြွေးလျှော့မှု",
+  "Closing balance": "အပိတ်လက်ကျန်",
+  "Debit": "အကြွေးတိုးငွေ",
+  "No transactions in this period.": "ဤကာလအတွင်း ငွေအဝင်အထွက်မရှိပါ။",
+  "Store credit purchases and repayments are processed by authorized store staff. Please contact the store if a record is incorrect.": "အကြွေးဝယ်ယူမှုနှင့် ဆပ်ငွေကို ခွင့်ပြုထားသောဝန်ထမ်းများက စီမံသည်။ မှတ်တမ်းမမှန်ပါက ဆိုင်သို့ဆက်သွယ်ပါ။",
+  "Order No.": "အရောင်းအမှတ်",
+  "Payment status": "ပေးချေမှုအခြေအနေ",
+  "Order status": "အရောင်းအခြေအနေ",
+  "Manual transfer": "ကိုယ်တိုင်ဘဏ်လွှဲ",
+  "Pre-order": "ကြိုတင်မှာယူမှု",
+  "Approval discount": "အတည်ပြုလျှော့ငွေ",
+  "Customer note": "ဖောက်သည်မှတ်ချက်",
+  "Finance entry": "ငွေစာရင်းမှတ်တမ်း",
+  "Cashier": "ငွေရှင်းဝန်ထမ်း",
+  "Register": "ငွေရှင်းကောင်တာ",
+  "Shift": "အလုပ်ချိန်",
+  "UI Showcase": "မျက်နှာပြင်ပုံစံနမူနာများ",
+  "Admin UI Showcase": "စီမံခန့်ခွဲမှုမျက်နှာပြင်နမူနာများ"
+}

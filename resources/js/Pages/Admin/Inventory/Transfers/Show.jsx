@@ -1,0 +1,207 @@
+import { usePhraseTranslation as useUiTranslation } from '@/Utils/i18n';
+import { formatTime as displayformatTime } from '@/Utils/dateTime';
+import { formatDateTime as displayformatDateTime } from '@/Utils/dateTime';
+import DetailTableRow from '@/Components/Admin/DetailTableRow';
+import { confirmCrud } from '@/Components/Admin/CrudConfirm';
+import { useState } from 'react';
+import { Head, Link, router, usePage } from '@/spa/router';
+import AdminLayout from '@/Layouts/AdminLayout';
+import Icon from '@/Components/Admin/icons';
+import { AdminFlash } from '@/Components/Admin/AdminFlash';
+import { routeWithBase } from '@/Utils/url';
+import useInventoryRealtime from '@/Utils/useInventoryRealtime';
+import { usePhraseTranslation } from '@/Utils/i18n';
+import { formatMoney } from '@/Utils/pricing';
+import { formatSelectedUnitQuantity } from '@/Utils/unitLabel';
+
+function formatDateTime(value) { return displayformatDateTime(value); }
+
+function formatUpdateTime(value) { return displayformatTime(value); }
+
+export default function TransferShow({ transfer, canDelete = false, lastUpdated, pollIntervalMs = 20000 }) {
+    const uiText = useUiTranslation();
+    const { app_base, flash, errors } = usePage().props;
+    const t = usePhraseTranslation();
+    const [deleting, setDeleting] = useState(false);
+    const { state: realtimeState, lastEventAt } = useInventoryRealtime({
+        locationIds: [transfer.source_location_id, transfer.destination_location_id],
+        transferId: transfer.id,
+        only: ['transfer', 'lastUpdated'],
+        pollIntervalMs,
+        listenBalance: false,
+        listenTransfers: true,
+    });
+    const lineCount = transfer.items.length;
+    const completedAt = transfer.received_at || transfer.created_at;
+    const creatorName = transfer.creator?.name || t('Admin');
+    const destroy = async () => {
+        if (!await confirmCrud(t('Delete :number? This will reverse stock at both shops and remove every related financial entry. This cannot be undone.', { number: transfer.transfer_number }))) return;
+
+        setDeleting(true);
+        router.delete(
+            routeWithBase(`/admin/inventory/transfers/${transfer.id}`, app_base),
+            {},
+            { preserveScroll: true, onFinish: () => setDeleting(false) },
+        );
+    };
+
+    return (
+        <AdminLayout
+            title={uiText(transfer.transfer_number)}
+            eyebrow={t('Stock transfer')}
+            contentClassName="transfer-detail-page"
+            action={<div className="inline-actions">
+                <Link className="btn secondary" href={routeWithBase('/admin/inventory/transfers', app_base)}>
+                    <Icon name="arrowLeft" size={14} /> {t('Back to transfers')}
+                </Link>
+                {canDelete && <button type="button" className="btn danger" onClick={destroy} disabled={deleting}><Icon name="trash" size={14} /> {uiText(deleting ? t('Deleting...') : t('Delete transfer'))}</button>}
+            </div>}
+        >
+            <Head title={uiText(transfer.transfer_number)} />
+            <AdminFlash flash={flash} errors={errors} />
+
+            <section className="panel glass transfer-detail-document">
+                <header className="transfer-detail-header">
+                    <div className="transfer-detail-title">
+                        <span className="transfer-detail-title-icon" aria-hidden="true">
+                            <Icon name="truck" size={18} />
+                        </span>
+                        <div>
+                            <p className="eyebrow">{t('Transfer summary')}</p>
+                            <h2>{t('Warehouse stock movement')}</h2>
+                            <p>{t('Completed by')} <strong>{creatorName}</strong></p>
+                        </div>
+                    </div>
+
+                    <div className="transfer-detail-state">
+                        <span className="status status-success">
+                            <span className="status-dot" />
+                            {t(transfer.status || 'received')}
+                        </span>
+                        <small className={`realtime-indicator ${realtimeState}`}>
+                            <span />
+                            {t('Realtime')} {t(realtimeState)} · {t('Updated')} {formatUpdateTime(lastEventAt || lastUpdated)}
+                        </small>
+                    </div>
+                </header>
+
+                <div className="transfer-route-summary">
+                    <div className="transfer-location-card">
+                        <span className="transfer-location-icon" aria-hidden="true">
+                            <Icon name="box" size={17} />
+                        </span>
+                        <div>
+                            <small>{t('Source')}</small>
+                            <strong>{transfer.source_location.name}</strong>
+                            <span>{transfer.source_location.code}</span>
+                        </div>
+                    </div>
+
+                    <div className="transfer-detail-direction" aria-hidden="true">
+                        <span><Icon name="arrowLeft" size={15} /></span>
+                        <small>{t('Stock moved')}</small>
+                    </div>
+
+                    <div className="transfer-location-card destination">
+                        <span className="transfer-location-icon" aria-hidden="true">
+                            <Icon name="box" size={17} />
+                        </span>
+                        <div>
+                            <small>{t('Destination')}</small>
+                            <strong>{transfer.destination_location.name}</strong>
+                            <span>{transfer.destination_location.code}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="transfer-detail-facts">
+                    <div>
+                        <small>{t('Quantity format')}</small>
+                        <strong>{t('Equivalent units')}</strong>
+                    </div>
+                    <div>
+                        <small>{t('Product lines')}</small>
+                        <strong>{lineCount.toLocaleString()}</strong>
+                    </div>
+                    <div>
+                        <small>{t('Transferred at')}</small>
+                        <strong>{formatDateTime(completedAt)}</strong>
+                    </div>
+                    <div>
+                        <small>{t('Reference')}</small>
+                        <strong>{transfer.transfer_number}</strong>
+                    </div>
+                    <div>
+                        <small>{t('Transfer value')}</small>
+                        <strong>{formatMoney(transfer.total_amount)}</strong>
+                    </div>
+                    <div>
+                        <small>{t('Finance impact')}</small>
+                        <strong>{t('None')}</strong>
+                    </div>
+                </div>
+
+                <div className="transfer-lines-heading">
+                    <div>
+                        <p className="eyebrow">{t('Movement lines')}</p>
+                        <h3>{t(':count products transferred', { count: lineCount })}</h3>
+                    </div>
+                    <small>{t('Source quantities decrease and destination quantities increase.')}</small>
+                </div>
+
+                <div className="table-wrap transfer-detail-lines">
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th className="transfer-line-number">#</th>
+                                <th>{t('Product / unit')}</th>
+                                <th className="numeric-cell">{t('Moved')}</th>
+                                <th className="numeric-cell">{t('Unit cost')}</th>
+                                <th className="numeric-cell">{t('Amount')}</th>
+                                <th className="numeric-cell">{transfer.source_location.code}</th>
+                                <th className="numeric-cell">{transfer.destination_location.code}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {transfer.items.map((item, index) => (
+                                <DetailTableRow  key={item.id} href={(item.product_id || item.product?.id) ? routeWithBase(`/admin/inventory/products/${item.product_id || item.product?.id}`,app_base) : undefined} permission="inventory.history">
+                                    <td className="transfer-line-number">{String(index + 1).padStart(2, '0')}</td>
+                                    <td>
+                                        <div className="transfer-line-product">
+                                            <span aria-hidden="true"><Icon name="box" size={14} /></span>
+                                            <div>
+                                                <strong>{item.product.name}</strong>
+                                                <small className="table-subline">{item.product.product_code} · {item.unit.name} ({item.unit.code})</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="numeric-cell">
+                                        <span className="transfer-quantity-badge moved">{formatSelectedUnitQuantity(item.requested_quantity, item.unit, item.product.units)}</span>
+                                    </td>
+                                    <td className="numeric-cell">{formatMoney(item.unit_cost)}</td>
+                                    <td className="numeric-cell"><strong>{formatMoney(item.line_total)}</strong></td>
+                                    <td className="numeric-cell">
+                                        <span className="transfer-quantity-badge negative">{formatSelectedUnitQuantity(-Number(item.requested_quantity), item.unit, item.product.units)}</span>
+                                    </td>
+                                    <td className="numeric-cell">
+                                        <span className="transfer-quantity-badge positive">{formatSelectedUnitQuantity(item.requested_quantity, item.unit, item.product.units, { signed: true })}</span>
+                                    </td>
+                                </DetailTableRow>
+                            ))}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colSpan="2">{t('Transfer total')}</td>
+                                <td />
+                                <td />
+                                <td className="numeric-cell"><strong>{formatMoney(transfer.total_amount)}</strong></td>
+                                <td />
+                                <td />
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+        </AdminLayout>
+    );
+}

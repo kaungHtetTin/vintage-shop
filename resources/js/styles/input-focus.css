@@ -1,0 +1,179 @@
+/* One focus policy for native controls, MUI fields and composite input shells.
+   Important declarations in this layer take precedence over legacy page rules
+   and vendor focus defaults, regardless of lazy stylesheet loading order. */
+@layer app-input-focus {
+    :root,
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) {
+        --field-border-color: var(--color-border, #dfdfd3);
+        --field-focus-color: var(--color-primary, #a45138);
+        --field-error-color: var(--color-danger, #ce4444);
+        --field-radius: 6px;
+        --field-ring-width: 2px;
+    }
+
+    /* A field's state changes its color, never its dimensions. */
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(input, select, textarea,
+        .MuiInputBase-root, .search-box, .bale-supplier-control,
+        .receipt-category-select, .transfer-qty-control, .pos-item__stepper,
+        .pos-console__quantity-entry, .admin-language-switcher, .v-branch,
+        [data-focus-shell]) {
+        --field-state-color: var(--field-focus-color);
+        --field-ring: 0 0 0 var(--field-ring-width) color-mix(in srgb, var(--field-state-color) 18%, transparent);
+    }
+
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(input, select, textarea):not(
+        [type='checkbox'], [type='radio'], [type='range'], [type='file'],
+        [type='hidden'], [type='button'], [type='submit'], [type='reset'],
+        [type='image'], [type='color'], .MuiInputBase-input, .MuiSelect-nativeInput) {
+        border-width: 1px !important;
+        border-style: solid !important;
+        border-radius: var(--field-radius) !important;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(input, select, textarea):not(
+        [type='checkbox'], [type='radio'], [type='range'], [type='file'],
+        [type='hidden'], [type='button'], [type='submit'], [type='reset'],
+        [type='image'], [type='color'], .MuiInputBase-input, .MuiSelect-nativeInput):not(:where(:is(
+            .search-box, .bale-supplier-control, .receipt-category-select,
+            .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry,
+            .admin-language-switcher, .v-branch, [data-focus-shell]) :is(input, select, textarea))):focus:not(:disabled) {
+        border-color: var(--field-state-color) !important;
+        outline: none !important;
+        outline-offset: 0 !important;
+        box-shadow: var(--field-ring) !important;
+    }
+
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(
+        .search-box, .bale-supplier-control, .receipt-category-select,
+        .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry,
+        .admin-language-switcher, .v-branch, [data-focus-shell]) {
+        border-width: 1px !important;
+        border-style: solid !important;
+        border-radius: var(--field-radius) !important;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(
+        .search-box, .bale-supplier-control, .receipt-category-select,
+        .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry,
+        .admin-language-switcher, .v-branch, [data-focus-shell]):focus-within {
+        border-color: var(--field-state-color) !important;
+        outline: none !important;
+        outline-offset: 0 !important;
+        box-shadow: var(--field-ring) !important;
+    }
+
+    /* MUI's fieldset is its border; its root owns the focus ring. */
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiOutlinedInput-root {
+        border: 0 !important;
+        border-radius: var(--field-radius) !important;
+        outline: none !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiOutlinedInput-notchedOutline {
+        border-width: 1px !important;
+        border-color: var(--field-border-color) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiOutlinedInput-root:not(.Mui-disabled):hover .MuiOutlinedInput-notchedOutline {
+        border-color: var(--field-state-color) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiInputBase-root:is(.Mui-focused, :focus-within):not(.Mui-disabled) {
+        outline: none !important;
+        box-shadow: var(--field-ring) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiOutlinedInput-root:is(.Mui-focused, :focus-within) .MuiOutlinedInput-notchedOutline {
+        border-color: var(--field-state-color) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiFormControl-root:focus-within .MuiInputLabel-root:not(.Mui-error),
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiInputLabel-root.Mui-focused:not(.Mui-error) {
+        color: var(--field-focus-color) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiInput-root, .MuiFilledInput-root) {
+        border: 1px solid var(--field-border-color) !important;
+        border-radius: var(--field-radius) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiInput-root, .MuiFilledInput-root):is(.Mui-focused, :focus-within) {
+        border-color: var(--field-state-color) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiInput-root, .MuiFilledInput-root)::before,
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiInput-root, .MuiFilledInput-root)::after {
+        border: 0 !important;
+    }
+
+    /* Validation keeps the same outline geometry and an error-colored ring. */
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is([aria-invalid='true'], .Mui-error, .is-invalid),
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.search-box, .bale-supplier-control,
+        .receipt-category-select, .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry,
+        [data-focus-shell]):has([aria-invalid='true'], .Mui-error),
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .form-field:has(> .field-error) > :is(input, select, textarea, .search-box, .bale-supplier-control) {
+        --field-state-color: var(--field-error-color);
+        border-color: var(--field-error-color) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline {
+        border-color: var(--field-error-color) !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiInputLabel-root.Mui-error {
+        color: var(--field-error-color) !important;
+    }
+
+    /* Inner inputs remain transparent and borderless in every interaction state.
+       Border-bearing shells, including a MUI field nested in a quantity group,
+       are the only elements that display focus. */
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiInputBase-input, .MuiSelect-select),
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(
+        .search-box, .bale-supplier-control, .receipt-category-select,
+        .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry,
+        .admin-language-switcher, .v-branch, [data-focus-shell]) :is(input, select, textarea, .MuiInputBase-root, .MuiOutlinedInput-notchedOutline),
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(
+        .search-box, .bale-supplier-control, .receipt-category-select,
+        .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry,
+        .admin-language-switcher, .v-branch, [data-focus-shell]):focus-within :is(input, select, textarea, .MuiInputBase-root, .MuiOutlinedInput-notchedOutline) {
+        border: 0 !important;
+        border-radius: 0 !important;
+        outline: none !important;
+        outline-offset: 0 !important;
+        box-shadow: none !important;
+    }
+
+    /* Selection controls retain a visible keyboard focus indicator. */
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) input:is([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file']):focus-visible:not(:disabled),
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiCheckbox-root, .MuiRadio-root, .MuiSwitch-switchBase).Mui-focusVisible,
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .settings-asset-actions:has(input[type='file']:focus-visible) label[for] {
+        outline: 2px solid var(--field-focus-color) !important;
+        outline-offset: 2px !important;
+        box-shadow: none !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiCheckbox-root, .MuiRadio-root, .MuiSwitch-switchBase) input:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(input, select, textarea, .MuiInputBase-root):disabled,
+    :is(.app-root, .MuiDialog-root, .MuiDrawer-root) .MuiInputBase-root.Mui-disabled {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(input, select, textarea, .MuiInputBase-root, [data-focus-shell], .search-box, .bale-supplier-control) {
+            transition: none !important;
+        }
+    }
+    @media (forced-colors: active) {
+        :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(input, select, textarea):not(:where(
+            .MuiInputBase-input, .MuiSelect-nativeInput,
+            :is(.search-box, .bale-supplier-control, .receipt-category-select, .transfer-qty-control,
+                .pos-item__stepper, .pos-console__quantity-entry, .admin-language-switcher, .v-branch, [data-focus-shell]) :is(input, select, textarea)
+        )):focus:not(:disabled):not(.Mui-disabled),
+        :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiInputBase-root, .search-box, .bale-supplier-control, .receipt-category-select,
+            .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry, .admin-language-switcher, .v-branch, [data-focus-shell]):focus-within:not(.Mui-disabled) {
+            outline: 2px solid Highlight !important;
+            outline-offset: 2px !important;
+            box-shadow: none !important;
+        }
+        :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.MuiInputBase-input, .MuiSelect-select),
+        :is(.app-root, .MuiDialog-root, .MuiDrawer-root) :is(.search-box, .bale-supplier-control, .receipt-category-select,
+            .transfer-qty-control, .pos-item__stepper, .pos-console__quantity-entry, .admin-language-switcher, .v-branch, [data-focus-shell]):focus-within :is(input, select, textarea, .MuiInputBase-root) {
+            outline: none !important;
+        }
+    }
+}

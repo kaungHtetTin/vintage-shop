@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Setting;
+use App\Support\UploadedFileUrl;
+use Illuminate\Support\Facades\Cache;
+
+class AppSettingsService
+{
+    public const RECEIPT_PAPER_SIZES = ['58mm', '76mm', '80mm', 'A5', 'A4'];
+
+    public const RECEIPT_DEFAULTS = [
+        'shop_name' => '', 'address' => '', 'phone' => '',
+        'footer' => 'Thank you for shopping with us!', 'paper_size' => 'A5',
+        'show_logo' => true, 'show_customer' => true, 'show_cashier' => true,
+        'show_foc' => true, 'auto_print' => false,
+        'qz_printing' => false, 'qz_printer_name' => '', 'cash_drawer' => false,
+    ];
+    public const DEFAULTS = [
+        'app_name' => 'LaLaPick',
+        'currency_label' => 'MMK',
+        'theme_color' => '#087f74',
+        'logo_path' => null,
+        'favicon_path' => null,
+    ];
+
+    private const CACHE_KEY = 'app_settings.public.v3';
+
+    public function all(): array
+    {
+        return Cache::rememberForever(self::CACHE_KEY, function () {
+            $settings = Setting::query()->pluck('value', 'key')->all();
+
+            return [
+                'app_name' => $settings['app_name'] ?? self::DEFAULTS['app_name'],
+                'currency_label' => $settings['currency_label'] ?? self::DEFAULTS['currency_label'],
+                'theme_color' => $settings['theme_color'] ?? self::DEFAULTS['theme_color'],
+                'logo_path' => $settings['logo_path'] ?? null,
+                'favicon_path' => $settings['favicon_path'] ?? null,
+                'receipt' => array_replace(self::RECEIPT_DEFAULTS, $this->decodeJson($settings['receipt'] ?? null) ?? []),
+            ];
+        });
+    }
+
+    public function publicSettings(): array
+    {
+        $settings = $this->all();
+
+        return array_merge($settings, [
+            'logo_url' => $this->publicUrl($settings['logo_path']),
+            'favicon_url' => $this->publicUrl($settings['favicon_path']),
+        ]);
+    }
+
+    public function setMany(array $values): void
+    {
+        foreach ($values as $key => $value) {
+            Setting::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => is_array($value) ? json_encode($value) : $value,
+                    'group' => $this->groupFor($key),
+                ],
+            );
+        }
+
+        Cache::forget(self::CACHE_KEY);
+    }
+
+    private function decodeJson(?string $value): ?array
+    {
+        if (! $value) {
+            return null;
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private function publicUrl(?string $path): ?string
+    {
+        if (! $path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return UploadedFileUrl::make($path);
+    }
+
+    private function groupFor(string $key): string
+    {
+        return match ($key) {
+            'logo_path', 'favicon_path', 'theme_color' => 'theme',
+            'receipt' => 'receipt',
+            default => 'general',
+        };
+    }
+}

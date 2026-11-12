@@ -1,0 +1,54 @@
+const fs = require('node:fs');
+const source = fs.readFileSync('scripts/verify-crud-modals.cjs','utf8');
+const prefix = source.slice(0,source.search(/    try \{\r?\n        await fs.mkdir\('artifacts\/admin-consistency'/));
+const checks = `
+    const detail = fixtures['/admin/orders/2'][1];
+    detail.voucherLinks={print:base+'/admin/pos/orders/2/receipt',pdf:'unused',public:'unused'};
+    detail.order={...detail.order,receipt_number:'RCT-002',receiver_phone:'091234567',created_at:'2026-11-12T10:00:00Z',credit_amount:2000,paid_amount:3000,credit_due_date:'2026-11-26',discount_amount:1000,total_amount:6000,payments:[{id:1,tender_type:'cash',amount:3000}],items:[{id:1,product:{name:'Vintage shirt',metadata:{vintage_bale:true,vintage_bale_id:1}},quantity:1,unit_name:'Piece',unit_price:6000,total_price:6000}]};
+    await fs.mkdir('artifacts/order-detail',{recursive:true});
+    try {
+        await page.setViewport({width:1440,height:900});
+        await goto('/admin/orders/2');
+        assert.equal(await page.$$eval('h1',n=>n.length),1);
+        assert.equal(await page.$$eval('button',n=>n.filter(n=>n.textContent.trim()==='Cancel order').length),1);
+        assert.equal(await page.$$eval('body',n=>n.some(n=>/No screenshot|Public link|Edit POS Sale|Screenshot & decision/.test(n.textContent))),false);
+        assert.ok(await page.$eval('.order-summary',n=>n.textContent.includes('Credit balance')&&n.textContent.includes('2,000')));
+        await page.screenshot({path:'artifacts/order-detail/desktop.png',fullPage:true});
+        await click('Mark delivered');
+        await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='Mark not delivered'));
+        await click('Mark not delivered');
+        await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='Mark delivered'));
+        await click('Cancel order'); await dialog();
+        assert.ok(await page.$eval('[role="dialog"]',n=>n.textContent.includes('outstanding debt reversed')));
+        const before=mutations.length; await escape(); assert.equal(mutations.length,before);
+        await click('Edit admin notes'); await dialog();
+        await page.type('[role="dialog"] textarea','Keep this note');
+        await click('Save notes');
+        await page.waitForFunction(()=>document.querySelector('[role="dialog"]').textContent.includes('Please check'));
+        assert.equal(await page.$eval('[role="dialog"] textarea',n=>n.value),'Keep this note'); await escape();
+        await goto('/admin/orders/1'); await click('Review payment'); await dialog();
+        await click('Confirm payment');
+        await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===2);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1); await escape();
+        await click('Cancel order'); await dialog(); await escape();
+        fixtures['/admin/orders/2'][1].order.payment_proof_url='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><text x="10" y="40">Payment receipt</text></svg>';
+        await goto('/admin/orders/2');
+        assert.ok(await page.$('.order-payment-proof'));
+        await page.setViewport({width:1280,height:720});
+        await page.evaluate(()=>document.querySelector('.app-root').dataset.theme='dark');
+        await page.screenshot({path:'artifacts/order-detail/dark.png',fullPage:true});
+        await page.setViewport({width:390,height:844});
+        await page.evaluate(()=>document.querySelector('.app-root').dataset.theme='light');
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+        await page.screenshot({path:'artifacts/order-detail/mobile.png',fullPage:true});
+        fixtures['/admin/orders/2'][1].order.status='cancelled';
+        await goto('/admin/orders/2');
+        assert.equal(await page.$$eval('button',n=>n.some(n=>/Mark delivered|Cancel order/.test(n.textContent))),false);
+        assert.deepEqual(errors,[]);
+        console.log('PASS: order layout, credit totals, delivery toggle, cancellation, notes error retention, payment review, proof visibility, desktop/mobile/dark and cancelled state.');
+    } finally { await browser.close(); }
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});
+`;
+eval(prefix+checks);
