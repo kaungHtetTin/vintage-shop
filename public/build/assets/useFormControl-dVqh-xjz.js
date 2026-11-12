@@ -1,0 +1,1 @@
+import{e as n}from"./app-C9SfTIUl.js";const u=n.createContext(void 0);function C(){return n.useContext(u)}function m({props:s,states:c}){const o=n.useContext(u),r={};return c.forEach(t=>{const e=s[t];r[t]=e===void 0&&o?o[t]:e}),[r,o]}export{u as F,m as a,C as u};
