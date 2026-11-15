@@ -18,15 +18,15 @@ class CreditStatementService
         $transactions = CustomerCreditTransaction::where('customer_id', $customer->id)
             ->with('order:id,order_number,receipt_number')
             ->whereBetween('created_at', [$fromDate, $toDate])
-            ->oldest()
+            ->oldest()->orderBy('id')
             ->get();
 
         return compact('customer', 'opening', 'transactions') + [
             'from' => $fromDate->toDateString(),
             'to' => $toDate->toDateString(),
             'closing' => round($opening + (float) $transactions->sum('amount'), 2),
-            'purchases' => round((float) $transactions->where('amount', '>', 0)->sum('amount'), 2),
-            'credits' => round(abs((float) $transactions->where('amount', '<', 0)->sum('amount')), 2),
+            'purchases' => round((float) $transactions->where('amount', '>', 0)->where('type', '!=', 'payment_reversal')->sum('amount'), 2),
+            'credits' => round(abs((float) $transactions->where('amount', '<', 0)->sum('amount')) - (float) $transactions->where('type', 'payment_reversal')->sum('amount'), 2),
         ];
     }
 

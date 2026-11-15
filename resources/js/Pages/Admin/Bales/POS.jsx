@@ -269,7 +269,7 @@ export default function BalePOS({ locations = [] }) {
                 </label>
 
             </div>
-            {error && (
+            {error && !checkoutModal && (
                 <div role="alert" className="flash error">
                     {uiText(error)}
                 </div>
@@ -405,7 +405,7 @@ export default function BalePOS({ locations = [] }) {
                     {discountValue > 0 && <p className="bale-help">{uiText("Subtotal")} {money(subtotal)} {uiText("/ Discount")} {money(discountValue)}</p>}
                     <div className="bale-pos-total"><span>{uiText("Total")}</span><strong>{money(total)}</strong></div>
                     <button type="button" className="btn primary full" disabled={busy || (!pending && (!location || !cart.length))} onClick={() => { setError(""); setCheckoutModal(true); }}>{uiText(pending ? "Retry same sale" : "Checkout")}</button>
-                    <CrudModal open={checkoutModal} onClose={() => setCheckoutModal(false)} title={uiText("Complete sale")} busy={busy}
+                    <CrudModal open={checkoutModal} onClose={() => { setError(''); setCheckoutModal(false); }} title={uiText("Complete sale")} busy={busy}
                         className="bale-checkout-dialog"
                         action={<>
                             <div className="bale-checkout-footer-total"><span>{uiText("Sale total")}</span><strong>{money(total)}</strong></div>

@@ -970,7 +970,7 @@ export default function PosIndex({ locations = [], categories = [], priceTypes =
         </>
     );
 
-    const visiblePageErrors = Object.entries({ ...pageErrors, ...errors });
+    const visiblePageErrors = Object.entries({ ...pageErrors, ...(!paymentDialogOpen ? errors : {}) });
 
     return (
         <Box
@@ -1176,7 +1176,7 @@ export default function PosIndex({ locations = [], categories = [], priceTypes =
                             </Stack>
                         </Stack>
 
-                        {scanError && (
+                        {scanError && !paymentDialogOpen && (
                             <Alert severity="error" sx={{ mb: 1.5 }} onClose={() => setScanError('')}>
                                 {scanError}
                             </Alert>
@@ -1618,7 +1618,7 @@ export default function PosIndex({ locations = [], categories = [], priceTypes =
 
             <Dialog
                 open={paymentDialogOpen}
-                onClose={() => !busy && setPaymentDialogOpen(false)}
+                onClose={() => { if (!busy) { setErrors({}); setScanError(''); setPaymentDialogOpen(false); } }}
                 maxWidth={false}
                 slotProps={{
                     paper: {
@@ -1674,16 +1674,18 @@ export default function PosIndex({ locations = [], categories = [], priceTypes =
                                 </Typography>
                             </Box>
                         </Stack>
-                        <IconButton size="small" sx={{ width: 28, height: 28 }} onClick={() => setPaymentDialogOpen(false)} disabled={busy}>
+                        <IconButton size="small" sx={{ width: 28, height: 28 }} onClick={() => { setErrors({}); setScanError(''); setPaymentDialogOpen(false); }} disabled={busy}>
                             <CloseIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                     </DialogTitle>
                     <DialogContent className="pos-console__payment-body pos-console__shift-body" sx={{ p: 1.25, bgcolor: 'grey.50', overflowY: 'auto' }}>
+                        {Object.entries(errors).map(([key, value]) => <Alert severity="error" key={key} sx={{ mb: 1 }}>{tp(Array.isArray(value) ? value.join(' ') : value)}</Alert>)}
+                        {scanError && <Alert severity="error" sx={{ mb: 1 }}>{scanError}</Alert>}
                         {editOrder && <Alert severity="warning" sx={{ mb: 1 }}>{tp('Saving will revise stock, payments, credit, and reports. The original sale remains in the audit history.')}</Alert>}
                         {paymentFormContent}
                     </DialogContent>
                     <DialogActions className="pos-console__payment-actions pos-console__shift-actions" sx={{ flexWrap: 'wrap', gap: 0.75, px: 1.25, py: 1, borderTop: `1px solid ${theme.palette.divider}`, bgcolor: 'background.paper' }}>
-                        <Button type="button" variant="outlined" onClick={() => setPaymentDialogOpen(false)} disabled={busy}>{tp('Cancel')}</Button>
+                        <Button type="button" variant="outlined" onClick={() => { setErrors({}); setScanError(''); setPaymentDialogOpen(false); }} disabled={busy}>{tp('Cancel')}</Button>
                         {completeSaleButtons}
                     </DialogActions>
                 </Box>

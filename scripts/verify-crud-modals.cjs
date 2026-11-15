@@ -64,6 +64,9 @@ async function main() {
         if (!url.pathname.startsWith(`${base}/admin/`)) return request.continue();
         if (request.method() !== 'GET') {
             mutations.push(route);
+            if (saveMode === 'location-success' && route === '/admin/locations/1') {
+                return request.respond({ status: 303, headers: { location: base + '/admin/locations' } });
+            }
             if (route === '/admin/orders/2/delivery') {
                 const data = JSON.parse(request.postData());
                 const fixture = fixtures['/admin/orders/2'];
@@ -144,6 +147,58 @@ async function main() {
         return layout;
     };
     try {
+        if (process.env.VINTAGE_MODAL_ERRORS_ONLY === '1') {
+            const cases = [
+                ['/admin/locations', ['Add warehouse']],
+                ['/admin/locations', ['@Edit Main branch']],
+                ['/admin/users', ['Add staff']],
+                ['/admin/users', ['@Edit staff']],
+                ['/admin/categories', ['Add category']],
+                ['/admin/customers', ['Add customer']],
+                ['/admin/roles', ['Add role']],
+                ['/admin/roles', ['Edit permissions']],
+                ['/admin/finance-book', ['Add expense fund']],
+                ['/admin/finance-book', ['Record actual cash']],
+                ['/admin/suppliers', ['+ Add supplier']],
+                ['/admin/bales', ['+ Buy a bale']],
+                ['/admin/bales/1', ['Finish this bale']],
+                ['/admin/bales/1', ['Add price group']],
+                ['/admin/bales/1', ['Return garments']],
+                ['/admin/finance', ['Add expense']],
+                ['/admin/finance', ['Record refund paid']],
+                ['/admin/customers/1', ['Credit settings']],
+                ['/admin/customers/1', ['Record credit payment']],
+                ['/admin/orders/1', ['Edit admin notes']],
+                ['/admin/orders/1', ['Review payment', 'Reject payment']],
+                ['/admin/orders/1', ['Cancel order']],
+                ['/admin/orders/2', ['Cancel order']],
+                ['/admin/pos', ['Checkout']],
+            ];
+            for (const [route, actions] of cases) {
+                await goto(route);
+                if (route === '/admin/pos') await page.click('.bale-label-grid button');
+                for (const action of actions) {
+                    if (action.startsWith('@')) await page.click(`button[aria-label="${action.slice(1)}"]`);
+                    else await click(action);
+                    await dialog();
+                }
+                await page.$eval('[role="dialog"] form', form => { form.noValidate = true; form.requestSubmit(); });
+                await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.textContent.includes('Please check this value.'));
+                assert.equal(await page.evaluate(() => [...document.querySelectorAll('.flash.error, .field-error, [role="alert"]')].filter(node => !node.closest('[role="dialog"]') && node.textContent.includes('Please check this value.')).length), 0, `${route} ${actions}: errors stay inside modal`);
+                await escape();
+                assert.equal(await page.evaluate(() => document.body.textContent.includes('Please check this value.')), false, `${route} ${actions}: dismiss leaves no page errors`);
+                console.log(`PASS modal validation: ${route} / ${actions.join(' -> ')}`);
+            }
+            await goto('/admin/locations');
+            await page.click('button[aria-label="Edit Main branch"]'); await dialog();
+            saveMode = 'location-success';
+            await page.$eval('[role="dialog"] form', form => { form.noValidate = true; form.requestSubmit(); });
+            await closed();
+            assert.equal(mutations.at(-1), '/admin/locations/1', 'Redirect never repeats PATCH on the listing');
+            assert.deepEqual(errors, []);
+            console.log(`PASS ${cases.length} modal error cases and branch PATCH -> 303 -> GET success.`);
+            return;
+        }
         await fs.mkdir('artifacts/admin-consistency', { recursive: true });
         for (const route of ['/admin/customers', '/admin/bales', '/admin/suppliers', '/admin/locations']) {
             await goto(route);

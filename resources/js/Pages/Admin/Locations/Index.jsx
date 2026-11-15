@@ -55,10 +55,10 @@ export default function LocationsIndex({ locations, staff, canManage }) {
     };
 
     const closeModal = () => {
-        if (form.processing) return;
         setOpen(false);
         setEditing(null);
         form.reset();
+        form.clearErrors();
     };
 
     const submit = (event) => {
@@ -100,7 +100,7 @@ export default function LocationsIndex({ locations, staff, canManage }) {
             }
         >
             <Head title={t('Warehouses')} />
-            <AdminFlash flash={flash} errors={form.errors} />
+            <AdminFlash flash={flash} />
 
             <section className="panel glass">
                 
@@ -175,7 +175,7 @@ export default function LocationsIndex({ locations, staff, canManage }) {
             </section>
 
             {open && (
-                <CrudModal open title={uiText(editing ? t('Edit warehouse') : t('New warehouse'))} onClose={closeModal} busy={form.processing} wide action={<> <button form="admin-locations-index-jsx-1" type="submit" className="btn primary" disabled={form.processing}>
+                <CrudModal open title={uiText(editing ? t('Edit warehouse') : t('New warehouse'))} onClose={closeModal} busy={form.processing} errors={form.errors} wide action={<> <button form="admin-locations-index-jsx-1" type="submit" className="btn primary" disabled={form.processing}>
                                 <Icon name="check" size={14} />
                                 {uiText(editing ? t('Save warehouse') : t('Create warehouse'))}
                             </button> </>}>

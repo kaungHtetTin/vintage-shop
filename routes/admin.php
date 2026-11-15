@@ -116,6 +116,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
         Route::post('/customers/{customer}/credit-payments', [CustomerController::class, 'recordCreditPayment'])
             ->middleware('admin.permission:credit.manage')
             ->name('customers.credit-payments.store');
+        Route::post('/customers/{customer}/credit-payments/{transaction}/correct', [CustomerController::class, 'correctCreditPayment'])
+            ->middleware('admin.permission:credit.manage')->name('customers.credit-payments.correct');
     });
 
     Route::middleware('admin.any_permission:view_reports,reports.sales')->group(function () {
@@ -181,6 +183,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::middleware('admin.permission:inventory.receive')->group(function () {
         Route::post('/suppliers', [VintageBaleController::class, 'supplierStore'])->name('suppliers.store');
         Route::post('/bales', [VintageBaleController::class, 'store'])->name('bales.store');
+        Route::patch('/bales/{bale}', [VintageBaleController::class, 'update'])->name('bales.update');
         Route::post('/bales/{bale}/status', [VintageBaleController::class, 'transition'])->name('bales.status');
     });
     Route::post('/bales/{bale}/labels', [VintageBaleController::class, 'label'])->middleware('admin.permission:catalog.manage')->name('bales.labels.store');

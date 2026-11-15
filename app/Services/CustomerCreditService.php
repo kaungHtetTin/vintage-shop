@@ -136,6 +136,21 @@ class CustomerCreditService
         ]);
     }
 
+    public function reversePayment(User $customer, CustomerCreditTransaction $original, User $actor, string $reason, array $attributes = []): CustomerCreditTransaction
+    {
+        return $this->record($customer, array_merge([
+            'order_id' => $original->order_id,
+            'payment_id' => $original->payment_id,
+            'created_by' => $actor->id,
+            'type' => 'payment_reversal',
+            'amount' => abs((float) $original->amount),
+            'tender_type' => $original->tender_type,
+            'reference' => $original->reference,
+            'notes' => $reason,
+            'reversal_of_id' => $original->id,
+        ], $attributes));
+    }
+
     private function record(User $customer, array $attributes): CustomerCreditTransaction
     {
         $locked = User::query()->lockForUpdate()->findOrFail($customer->id);

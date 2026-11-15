@@ -50,7 +50,25 @@ class VintageBaleController extends Controller
             $item->setAttribute('returned_quantity', (float) \App\Models\OrderReturn::where('order_item_id', $item->id)->whereNotNull('restocked_at')->sum('quantity'));
             return $item;
         });
-        return Spa::render('Admin/Bales/Show', ['bale' => $report->summary($bale), 'sales' => $sales]);
+        return Spa::render('Admin/Bales/Show', ['bale' => $report->summary($bale), 'sales' => $sales, 'suppliers' => VintageSupplier::orderBy('name')->get(['id', 'name'])]);
+    }
+    public function update(Request $request, VintageBale $bale, VintageBaleService $service)
+    {
+        $this->access($request, $bale);
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:40', 'regex:/^[A-Za-z0-9][A-Za-z0-9_-]*$/', Rule::unique('vintage_bales', 'code')->ignore($bale->id), Rule::unique('products', 'product_code')->ignore($bale->product_id)],
+            'supplier_id' => ['required', 'exists:vintage_suppliers,id'],
+            'purchased_at' => ['required', 'date', 'before_or_equal:'.now(config('vintage.timezone'))->toDateString()],
+            'purchase_cost' => ['required', 'numeric', 'min:0.01', 'max:999999999.99', 'decimal:0,2'],
+            'purchase_payment_method' => ['required', Rule::in(['cash', 'mmqr'])],
+            'laundry_cost' => ['required', 'numeric', 'min:0', 'max:999999999.99', 'decimal:0,2'],
+            'laundry_payment_method' => ['required', Rule::in(['cash', 'mmqr'])],
+            'total_pieces' => ['present', 'nullable', 'integer', 'min:1', 'max:1000000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'edit_token' => ['required', 'string', 'size:64'],
+        ]);
+        $service->update($bale, $data, $request->user());
+        return redirect()->route('admin.bales.show', $bale, 303)->with('success', \App\Support\UiText::get('Bale information updated.'));
     }
     public function transition(Request $request, VintageBale $bale, VintageBaleService $service)
     {

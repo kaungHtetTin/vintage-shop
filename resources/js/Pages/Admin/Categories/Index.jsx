@@ -44,7 +44,7 @@ export default function Index({ categories, parentCategories }) {
     const [iconCropper, setIconCropper] = useState(null);
     const iconInputRef = useRef(null);
 
-    const { data, setData, post, patch, delete: destroy, processing, reset, errors } = useForm({
+    const { data, setData, post, patch, delete: destroy, processing, reset, clearErrors, errors } = useForm({
         parent_id: '',
         name: '',
         description: '',
@@ -60,6 +60,7 @@ export default function Index({ categories, parentCategories }) {
     const iconPreviewUrl = data.remove_icon_image ? null : iconPreviewObjectUrl || currentCategory?.icon_image_url;
 
     const handleOpen = (category = null) => {
+        clearErrors();
         if (category) {
             setEditMode(true);
             setCurrentCategory(category);
@@ -84,6 +85,7 @@ export default function Index({ categories, parentCategories }) {
     };
 
     const handleClose = () => {
+        clearErrors();
         setOpen(false);
         setIconCropper(null);
         reset();
@@ -230,7 +232,7 @@ export default function Index({ categories, parentCategories }) {
             </section>
 
             {open && (
-                <CrudModal open title={uiText(editMode ? t('Edit category') : t('New category'))} onClose={handleClose} busy={processing} wide action={<> <button form="admin-categories-index-jsx-1" type="submit" className="btn primary" disabled={processing}>
+                <CrudModal open title={uiText(editMode ? t('Edit category') : t('New category'))} onClose={handleClose} busy={processing} errors={errors} wide action={<> <button form="admin-categories-index-jsx-1" type="submit" className="btn primary" disabled={processing}>
                                 {uiText(editMode ? t('Update category') : t('Create category'))}
                             </button> </>}>
 <form id="admin-categories-index-jsx-1" className="admin-modal-form" onSubmit={handleSubmit}>

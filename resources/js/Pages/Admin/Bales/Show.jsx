@@ -13,6 +13,7 @@ import {
     uuid,
 } from "@/Components/Bales/shared";
 import AdminPagination from "@/Components/Admin/AdminPagination";
+import EditBaleModal from '@/Components/Bales/EditBaleModal';
 function ReturnGarments({ item }) {
     const uiText = useUiTranslation();
     const { href } = useBales();
@@ -98,7 +99,7 @@ function ReturnGarments({ item }) {
         </CrudAction>
     );
 }
-export default function BaleShow({ bale, sales }) {
+export default function BaleShow({ bale, sales, suppliers = [] }) {
     const uiText = useUiTranslation();
     const { href, can } = useBales();
     const next = { purchased: "laundry", laundry: "ready", ready: "closed" }[
@@ -115,12 +116,11 @@ export default function BaleShow({ bale, sales }) {
     return (
         <Page
             title={bale.code}
-            errors={{ ...move.errors, ...price.errors }}
             eyebrow="Bale details" contentClassName="bale-detail-page" headingDetails={<div className="bale-heading-details"><State status={bale.status} /><span><Icon name="users" size={14} />{bale.supplier?.name || "No supplier"}</span><span><Icon name="mapPin" size={14} />{bale.location?.name}</span><span><Icon name="history" size={14} />{displayformatDate(bale.purchased_at)}</span></div>} action={<div className="inline-actions admin-page-actions"><Link
                     className="btn secondary"
                     href={href(`/admin/bales/${bale.id}/labels`)}
-                > {uiText("Print price labels")} </Link>{next && can("inventory.receive") && (
-                <CrudAction title={uiText(bale.status === "purchased" ? "Send this bale to laundry" : bale.status === "laundry" ? "Laundry finished" : "Finish this bale")} className="btn primary" form={move}>
+                > {uiText("Print price labels")} </Link>{can('inventory.receive') && <EditBaleModal bale={bale} suppliers={suppliers} />}{next && can("inventory.receive") && (
+                <CrudAction title={uiText(bale.status === "purchased" ? "Send this bale to laundry" : bale.status === "laundry" ? "Laundry finished" : "Finish this bale")} className="btn primary" form={move} onOpen={() => move.setData({ status: next, laundry_cost: bale.laundry_cost, laundry_payment_method: bale.laundry_payment_method, total_pieces: bale.total_pieces ?? '' })}>
                     <form
                         onSubmit={(e) => {
                             e.preventDefault();

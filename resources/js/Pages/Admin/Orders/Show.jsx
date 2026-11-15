@@ -128,8 +128,6 @@ export default function OrdersShow({ order, voucherLinks = {}, canReviewPayments
                 </div>
             </div>
             <AdminFlash flash={flash} errors={{
-                order: confirmForm.errors.order || cancelForm.errors.order || deleteForm.errors.order,
-                status: pageErrors.status,
                 delivery: deliveryForm.errors.delivery || deliveryForm.errors.request || pageErrors.delivery,
             }} />
             {isCancelled && <div className="flash warning">
@@ -193,11 +191,11 @@ export default function OrdersShow({ order, voucherLinks = {}, canReviewPayments
                         {Number(order.shipping_fee || 0) > 0 && <div className="detail-row"><span>{t('Additional charges')}</span><strong>{formatMoney(order.shipping_fee)}</strong></div>}
                         <div className="detail-row order-summary-total"><span>{t('Total')}</span><strong>{formatMoney(order.final_amount)}</strong></div>
                         {(order.payments || []).map(payment => <div className="detail-row" key={payment.id}>
-                            <span>{t(({ cash: 'Cash', mmqr: 'MMQR (Pay)', bank_transfer: 'Bank transfer', card: 'Card', credit: 'Credit' })[payment.tender_type || payment.method] || payment.tender_type || payment.method || 'Payment')}</span><strong>{formatMoney(payment.amount)}</strong>
+                            <span>{t(({ cash: 'Cash', mmqr: 'MMQR (Pay)', bank_transfer: 'Bank transfer', card: 'Card', credit: 'Credit' })[payment.tender_type || payment.method] || payment.tender_type || payment.method || 'Payment')}{payment.status === 'reversed' && <small>{t('Reversed')} · {payment.payment_details?.reversal_reason}</small>}</span><strong>{payment.status === 'reversed' ? <s>{formatMoney(payment.amount)}</s> : formatMoney(payment.amount)}</strong>
                         </div>)}
                         {!(order.payments || []).length && order.payment_method && <div className="detail-row"><span>{t('Method')}</span><strong>{t(({ cash: 'Cash', mmqr: 'MMQR (Pay)', bank_transfer: 'Bank transfer', card: 'Card', credit: 'Credit' })[order.payment_method] || order.payment_method)}</strong></div>}
                         {isCreditSale && <div className="order-credit-summary">
-                            {!(order.payments || []).length && <div className="detail-row"><span>{t('Paid')}</span><strong>{formatMoney(order.paid_amount || 0)}</strong></div>}
+                            <div className="detail-row"><span>{t('Paid')}</span><strong>{formatMoney(order.paid_amount || 0)}</strong></div>
                             <div className="detail-row"><span>{t('Credit balance')}</span><strong>{formatMoney(Math.max(0, Number(order.final_amount) - Number(order.paid_amount || 0)))}</strong></div>
                             {order.credit_due_date && <div className="detail-row"><span>{t('Due date')}</span><strong>{displayformatDate(order.credit_due_date)}</strong></div>}
                         </div>}
@@ -219,8 +217,7 @@ export default function OrdersShow({ order, voucherLinks = {}, canReviewPayments
                     </div>}
                 </aside>
             </div>
-                                    <CrudModal open={reviewOpen} onClose={() => setReviewOpen(false)} title={t('Review payment')} busy={confirmForm.processing}>
-                                        <AdminFlash errors={confirmForm.errors} />
+                                    <CrudModal open={reviewOpen} onClose={() => { setReviewOpen(false); confirmForm.clearErrors(); }} title={t('Review payment')} busy={confirmForm.processing} errors={confirmForm.errors}>
                                 <div
                                     className="stack-sm"
                                     style={{
@@ -308,7 +305,7 @@ export default function OrdersShow({ order, voucherLinks = {}, canReviewPayments
                                 </div>
                                     </CrudModal>
             {rejectOpen && (
-                <CrudModal open title={t('Reject payment')} onClose={() => setRejectOpen(false)} busy={rejectForm.processing} action={<> <button form="admin-orders-show-jsx-1" type="submit" className="btn danger" disabled={rejectForm.processing}>
+                <CrudModal open title={t('Reject payment')} onClose={() => { setRejectOpen(false); rejectForm.clearErrors(); }} busy={rejectForm.processing} errors={rejectForm.errors} action={<> <button form="admin-orders-show-jsx-1" type="submit" className="btn danger" disabled={rejectForm.processing}>
                                 {t('Reject & cancel')}
                             </button> </>}>
 <form id="admin-orders-show-jsx-1" className="admin-modal-form" onSubmit={handleReject}>
@@ -328,7 +325,7 @@ export default function OrdersShow({ order, voucherLinks = {}, canReviewPayments
             )}
 
             {cancelOpen && (
-                <CrudModal open title={t('Cancel order')} onClose={() => setCancelOpen(false)} busy={cancelForm.processing} action={<> <button form="admin-orders-show-jsx-2" type="submit" className="btn danger" disabled={cancelForm.processing}>
+                <CrudModal open title={t('Cancel order')} onClose={() => { setCancelOpen(false); cancelForm.clearErrors(); }} busy={cancelForm.processing} errors={cancelForm.errors} action={<> <button form="admin-orders-show-jsx-2" type="submit" className="btn danger" disabled={cancelForm.processing}>
                                 {t('Cancel order')}
                             </button> </>}>
 <form id="admin-orders-show-jsx-2" className="admin-modal-form" onSubmit={handleCancel}>
@@ -353,7 +350,7 @@ export default function OrdersShow({ order, voucherLinks = {}, canReviewPayments
             )}
 
             {deleteOpen && (
-                <CrudModal open title={t(removalTitle)} onClose={() => setDeleteOpen(false)} busy={deleteForm.processing} action={<> <button form="admin-orders-show-jsx-3" type="submit" className="btn danger" disabled={deleteForm.processing} aria-busy={deleteForm.processing}>
+                <CrudModal open title={t(removalTitle)} onClose={() => { setDeleteOpen(false); deleteForm.clearErrors(); }} busy={deleteForm.processing} errors={deleteForm.errors} action={<> <button form="admin-orders-show-jsx-3" type="submit" className="btn danger" disabled={deleteForm.processing} aria-busy={deleteForm.processing}>
                                 {uiText(deleteForm.processing ? t('Updating...') : t(removalTitle))}
                             </button> </>}>
 <form id="admin-orders-show-jsx-3" className="admin-modal-form" onSubmit={handleDelete}>

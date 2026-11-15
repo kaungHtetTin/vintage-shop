@@ -98,7 +98,7 @@ export default function CustomersIndex({
                 </button></div>}
         >
             <Head title={t("Customers")} />
-            <AdminFlash flash={flash} errors={createForm.errors} />
+            <AdminFlash flash={flash} />
             <div className="metrics-grid four">
                 <article className="metric-card glass">
                     <small>{t("Credit outstanding")}</small>

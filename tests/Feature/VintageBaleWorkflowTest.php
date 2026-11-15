@@ -205,6 +205,7 @@ class VintageBaleWorkflowTest extends TestCase
         $staff->locations()->sync([$other->id]);
         $this->actingAs($staff);
         $this->getJson('/admin/bales/'.$bale->id)->assertForbidden();
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh()))->assertForbidden();
         $this->getJson('/admin/bales')->assertOk()->assertJsonCount(0, 'props.bales.data');
         $this->getJson('/admin/bale-pos/catalog?location_id='.$branch->id)->assertForbidden();
         $this->getJson('/admin/finance?location_id='.$branch->id)->assertForbidden();
@@ -250,6 +251,88 @@ class VintageBaleWorkflowTest extends TestCase
         $this->assertDatabaseHas('vintage_bales', ['id' => $bale->id]);
         $this->assertDatabaseHas('products', ['id' => $bale->product_id, 'name' => $bale->code]);
     }
+    private function baleEditData(VintageBale $bale, array $changes = []): array
+    {
+        return array_replace($bale->only(['code', 'supplier_id', 'purchase_cost', 'purchase_payment_method', 'laundry_cost', 'laundry_payment_method', 'total_pieces', 'notes', 'edit_token']), ['purchased_at' => $bale->purchased_at->toDateString()], $changes);
+    }
+
+    public function test_bale_edits_during_sales_reconcile_stock_and_finance_without_rewriting_sales(): void
+    {
+        [$actor, $branch, $supplier] = $this->setupShop();
+        $bale = $this->purchase($branch, $supplier, 10);
+        $label = $this->ready($bale);
+        $this->postJson('/admin/bale-pos/checkout', $this->sale($branch, $label, 2))->assertOk();
+        $item = OrderItem::firstOrFail();
+        $originalItem = $item->getAttributes();
+        $other = VintageSupplier::create(['name' => 'Correct supplier']);
+        $data = $this->baleEditData($bale->fresh(), ['code' => 'CORRECTED-BALE', 'supplier_id' => $other->id, 'purchase_cost' => 14000, 'laundry_cost' => 4000, 'purchase_payment_method' => 'mmqr', 'total_pieces' => 12, 'notes' => 'Corrected after counting.']);
+        $this->patchJson('/admin/bales/'.$bale->id, $data)->assertStatus(303)->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('inventory_balances', ['product_id' => $bale->product_id, 'on_hand_qty' => 10]);
+        $this->assertDatabaseHas('financial_entries', ['bale_id' => $bale->id, 'category' => 'bale_purchase', 'amount' => 14000, 'payment_method' => 'mmqr']);
+        $this->assertDatabaseHas('financial_entries', ['bale_id' => $bale->id, 'category' => 'bale_laundry', 'amount' => 4000]);
+        $this->assertSame(2, FinancialEntry::where('bale_id', $bale->id)->count());
+        $this->assertEquals(1500, $bale->product->fresh()->original_price);
+        $this->assertSame($originalItem, $item->fresh()->getAttributes());
+        $this->assertSame($label->barcode, $label->fresh()->barcode);
+        $this->assertSame(2, app(VintageBaleReport::class)->summary($bale->fresh())['pieces_sold']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'bale.updated', 'subject_id' => $bale->id]);
+        $this->patchJson('/admin/bales/'.$bale->id, $data)->assertUnprocessable()->assertJsonValidationErrors('edit_token');
+    }
+
+    public function test_bale_count_can_be_set_after_uncounted_sales_but_cannot_drop_below_sold_pieces(): void
+    {
+        [$actor, $branch, $supplier] = $this->setupShop();
+        $bale = $this->purchase($branch, $supplier);
+        $label = $this->ready($bale);
+        $this->postJson('/admin/bale-pos/checkout', $this->sale($branch, $label, 3))->assertOk();
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['total_pieces' => 2]))->assertUnprocessable()->assertJsonValidationErrors('total_pieces');
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['total_pieces' => 8]))->assertStatus(303)->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('inventory_balances', ['product_id' => $bale->product_id, 'on_hand_qty' => 5]);
+        $balance = InventoryBalance::where('product_id', $bale->product_id)->firstOrFail();
+        $balance->update(['reserved_qty' => 2]);
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['total_pieces' => 4]))->assertUnprocessable()->assertJsonValidationErrors('total_pieces');
+        $balance->update(['reserved_qty' => 0]);
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['total_pieces' => 6]))->assertStatus(303);
+        $this->assertDatabaseHas('inventory_balances', ['product_id' => $bale->product_id, 'on_hand_qty' => 3]);
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['total_pieces' => null]))->assertUnprocessable()->assertJsonValidationErrors('total_pieces');
+    }
+
+    public function test_purchased_laundry_and_finished_bales_allow_information_edits(): void
+    {
+        [$actor, $branch, $supplier] = $this->setupShop();
+        $bale = $this->purchase($branch, $supplier, 5);
+        foreach (['purchased', 'laundry', 'ready', 'closed'] as $status) {
+            if ($status !== 'purchased') {
+                $this->post('/admin/bales/'.$bale->id.'/status', ['status' => $status, 'laundry_cost' => 2000, 'laundry_payment_method' => 'cash'])->assertSessionHasNoErrors();
+            }
+            $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['notes' => 'Edited '.$status, 'laundry_cost' => 2000]))->assertStatus(303)->assertSessionHasNoErrors();
+            $this->assertSame('Edited '.$status, $bale->fresh()->notes);
+            $this->assertSame(1, FinancialEntry::where('bale_id', $bale->id)->where('category', 'bale_laundry')->count());
+        }
+        $this->assertDatabaseHas('inventory_balances', ['product_id' => $bale->product_id, 'on_hand_qty' => 0]);
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['total_pieces' => 6]))->assertUnprocessable()->assertJsonValidationErrors('total_pieces');
+        $this->assertSame('closed', $bale->fresh()->status);
+    }
+
+    public function test_bale_edit_requires_inventory_permission(): void
+    {
+        [$actor, $branch, $supplier] = $this->setupShop();
+        $bale = $this->purchase($branch, $supplier, 5);
+        $viewer = User::factory()->create(['role' => 'staff', 'status' => 'active']);
+        $this->actingAs($viewer)->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale))->assertForbidden();
+    }
+
+    public function test_laundry_cost_corrected_before_ready_is_not_duplicated_or_left_stale(): void
+    {
+        [$actor, $branch, $supplier] = $this->setupShop();
+        $bale = $this->purchase($branch, $supplier, 5);
+        $this->patchJson('/admin/bales/'.$bale->id, $this->baleEditData($bale->fresh(), ['laundry_cost' => 2000]))->assertStatus(303);
+        $this->post('/admin/bales/'.$bale->id.'/status', ['status' => 'laundry'])->assertSessionHasNoErrors();
+        $this->post('/admin/bales/'.$bale->id.'/status', ['status' => 'ready', 'laundry_cost' => 0, 'laundry_payment_method' => 'cash'])->assertSessionHasNoErrors();
+        $this->assertSame(1, FinancialEntry::where('bale_id', $bale->id)->where('category', 'bale_laundry')->count());
+        $this->assertDatabaseHas('financial_entries', ['bale_id' => $bale->id, 'category' => 'bale_laundry', 'amount' => 0]);
+    }
+
     private function cashTotal(): float
     {
         return round((float) FinancialEntry::where('status', 'approved')->where('payment_method', 'cash')

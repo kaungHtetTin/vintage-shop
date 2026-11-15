@@ -45,7 +45,7 @@ export default function FinanceBook({ books, funds, locations = [], filters = {}
 
     return <AdminLayout title={t('Finance book')} eyebrow={t('Branch expense funds')} contentClassName="finance-book-page" action={<AdminFilterDrawer filters={filters} fields={[{key:'location_id',label:'Store',type:'select',options:filterOptions(locations,'All stores')},{key:'date',label:'Date',type:'date',required:true}]} onApply={values=>router.get(routeWithBase('/admin/finance-book',app_base),values,{preserveState:true,preserveScroll:true,replace:true})} onReset={()=>router.get(routeWithBase('/admin/finance-book',app_base),{},{preserveState:true,preserveScroll:true,replace:true})}/>}>
         <Head title={t('Finance book')} />
-        <AdminFlash flash={{ success: deleteSuccess || flash?.success }} errors={{ ...form.errors, ...(deleteError ? { fund: deleteError } : {}) }} />
+        <AdminFlash flash={{ success: deleteSuccess || flash?.success }} errors={deleteError ? { fund: deleteError } : {}} />
         <section className="panel glass"></section>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14 }}>
             {(books?.data || []).map((book) => <section key={book.id} className="panel glass">
@@ -63,7 +63,7 @@ export default function FinanceBook({ books, funds, locations = [], filters = {}
             <AdminPagination paginator={funds} label={t('funding records')} />
         </section>
         {selected && (
-            <CrudModal open title={t(mode === 'count' ? 'Record actual cash' : 'Add expense fund')} onClose={() => !form.processing && setSelected(null)} busy={form.processing} action={<> <button form="admin-financebook-index-jsx-1" type="submit" className="btn primary" disabled={form.processing}>{t(form.processing ? 'Saving...' : mode === 'count' ? 'Save actual cash' : 'Add fund')}</button> </>}>
+            <CrudModal open title={t(mode === 'count' ? 'Record actual cash' : 'Add expense fund')} onClose={() => { setSelected(null); form.clearErrors(); }} busy={form.processing} errors={form.errors} action={<> <button form="admin-financebook-index-jsx-1" type="submit" className="btn primary" disabled={form.processing}>{t(form.processing ? 'Saving...' : mode === 'count' ? 'Save actual cash' : 'Add fund')}</button> </>}>
 <form id="admin-financebook-index-jsx-1" className="admin-modal-form" onSubmit={submit}><small>{selected.name} · {selected.code} · {displayformatDate(form.data.entry_date)}</small>
 
                     <div className="crud-grid admin-form-grid admin-form-grid-single">

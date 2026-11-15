@@ -71,14 +71,16 @@ class CreditReportController extends Controller
             };
             $to = today()->toDateString();
         }
-        $base = CustomerCreditTransaction::query()->where('type', 'payment')
+        $base = CustomerCreditTransaction::query()->whereIn('type', ['payment', 'payment_reversal'])
             ->when(! $request->user()->isSuperAdmin(), fn ($query) => $query->whereHas('order', fn ($orders) => $orders->whereIn('location_id', $request->user()->accessibleLocationIds())));
         $payments = (clone $base)
-            ->with(['customer:id,name,phone', 'order:id,order_number,receipt_number', 'creator:id,name'])
+            ->withCorrectionDetails()->with(['customer:id,name,phone', 'creator:id,name'])
             ->when($search !== '', function ($query) use ($search) {
                 $term = '%'.$search.'%';
                 $query->where(fn ($nested) => $nested->where('transaction_number', 'like', $term)
                     ->orWhere('reference', 'like', $term)
+                    ->orWhere('metadata->original_transaction', 'like', $term)
+                    ->orWhere('metadata->reference', 'like', $term)
                     ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', $term)->orWhere('phone', 'like', $term))
                     ->orWhereHas('order', fn ($order) => $order->where('order_number', 'like', $term)->orWhere('receipt_number', 'like', $term)));
             })
@@ -86,6 +88,7 @@ class CreditReportController extends Controller
             ->when($from, fn ($query, $from) => $query->whereDate('created_at', '>=', $from))
             ->when($to, fn ($query, $to) => $query->whereDate('created_at', '<=', $to))
             ->orderByDesc('created_at')->orderByDesc('id')->paginate(20)->withQueryString();
+        $payments->getCollection()->each(fn ($entry) => $entry->setAttribute('can_correct', $entry->canBeCorrectedBy($request->user())));
 
         return Spa::render('Admin/Credit/Collections', [
             'payments' => $payments,

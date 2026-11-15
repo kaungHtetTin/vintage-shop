@@ -4,6 +4,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material
 import Icon from '@/Components/Admin/icons';
 import { usePhraseTranslation } from '@/Utils/i18n';
 import '@/styles/crud-modal.css';
+import { formatErrorMessage } from '@/Utils/formatErrorMessage';
 
 const dialogContainer = () => document.querySelector('.app-root');
 
@@ -29,7 +30,7 @@ function organizeForm(children, id, cancelLabel) {
     return { content, actions };
 }
 
-export default function CrudModal({ open, onClose, title, busy = false, children, action, wide = false, className = '' }) {
+export default function CrudModal({ open, onClose, title, busy = false, errors = {}, children, action, wide = false, className = '' }) {
     const uiText = useUiTranslation();
     const id = useId();
     const t = usePhraseTranslation();
@@ -44,7 +45,12 @@ export default function CrudModal({ open, onClose, title, busy = false, children
                     <Icon name="close" size={18} />
                 </button>
             </DialogTitle>
-            <DialogContent dividers aria-busy={busy}>{organized.content}</DialogContent>
+            <DialogContent dividers aria-busy={busy}>
+                {Object.values(errors).some(Boolean) && <div className="flash error" role="alert">
+                    {[...new Set(Object.values(errors).flat().filter(Boolean))].map((error, index) => <p key={index}>{uiText(formatErrorMessage(error))}</p>)}
+                </div>}
+                {organized.content}
+            </DialogContent>
             <DialogActions>
                 <button type="button" className="btn secondary" disabled={busy} onClick={onClose}>{t('Cancel')}</button>
                 {organized.actions}
@@ -66,10 +72,7 @@ export function CrudAction({ title, label = title, form, children, wide = false,
             onOpen?.();
             setOpen(true);
         }}>{uiText(label)}</button>
-        <CrudModal open={open} onClose={() => setOpen(false)} title={uiText(title)} busy={form.processing} wide={wide}>
-            {Object.keys(form.errors).length > 0 && <div className="flash error" role="alert">
-                {Object.entries(form.errors).map(([key, error]) => <p key={key}>{String(error)}</p>)}
-            </div>}
+        <CrudModal open={open} onClose={() => { form.clearErrors(); setOpen(false); }} title={uiText(title)} busy={form.processing} errors={form.errors} wide={wide}>
             {children}
         </CrudModal>
     </>;

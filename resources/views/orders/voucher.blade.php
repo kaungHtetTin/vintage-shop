@@ -485,7 +485,7 @@
                 <span>{{ $ui('Total') }}</span>
                 <strong>{{ $formatMoney($order->final_amount) }}</strong>
             </div>
-            @foreach($order->payments as $payment)
+            @foreach($order->payments->where('status', '!=', 'reversed') as $payment)
                 <div class="detail-row">
                     <span>{{ $ui($payment->tender_type === 'mmqr' ? 'MMQR (Pay)' : ($payment->tender_type ?: $payment->method)) }}</span>
                     <strong>{{ $formatMoney($payment->amount) }}</strong>

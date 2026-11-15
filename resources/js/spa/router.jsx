@@ -262,7 +262,6 @@ async function parseSpaResponse(response, options = {}) {
 
     if (response.status === 409 && contentType.includes('application/json')) {
         const payload = await response.json();
-        if (payload?.component) { await applyPage(payload, options); return payload; }
         const errors = flattenErrors(payload.errors || { conflict: payload.message || 'This record changed. Reload and review it before saving.' });
         options.onError?.(errors);
         return { errors };
@@ -271,10 +270,14 @@ async function parseSpaResponse(response, options = {}) {
     if (!response.ok && response.status !== 409) {
         if (contentType.includes('application/json')) {
             const payload = await response.json();
-            options.onError?.(flattenErrors(payload.errors || payload || {}));
+            options.onError?.(flattenErrors(payload.errors || { request: payload.message || 'Unable to save. Please try again.' }));
             return payload;
         }
 
+        if (String(options.method || 'get').toLowerCase() !== 'get' && options.onError) {
+            options.onError({ request: 'Unable to save. Please try again.' });
+            return null;
+        }
         window.location.assign(response.url || window.location.href);
         return null;
     }
@@ -285,15 +288,21 @@ async function parseSpaResponse(response, options = {}) {
     }
 
     const page = await response.json();
-    await applyPage(page, options);
     const pageErrors = flattenErrors(page?.props?.errors || {});
+    if (page?.props?.flash?.error && !Object.keys(pageErrors).length) {
+        pageErrors.error = page.props.flash.error;
+    }
     const hasPageErrors = Object.keys(pageErrors).length > 0;
 
     if (hasPageErrors && String(options.method || 'get').toLowerCase() !== 'get') {
+        // A failed form owns its errors. Keep its page and modal mounted,
+        // rather than flashing the same errors in the background page.
+        if (!options.onError) await applyPage(page, options);
         options.onError?.(pageErrors);
         return page;
     }
 
+    await applyPage(page, options);
     options.onSuccess?.(page);
     return page;
 }
@@ -386,36 +395,15 @@ export const router = {
                 return null;
             }
 
-            const refreshRedirected = options.refreshRedirected !== false;
-            const page = await parseSpaResponse(response, {
-                ...options,
-                // Defer success until the follow-up GET when a mutation redirected.
-                onSuccess: (!isGet && response.redirected && response.url && refreshRedirected) ? undefined : options.onSuccess,
-            });
-            const redirectedPageErrors = flattenErrors(page?.props?.errors || {});
-            const redirectedWithErrors = !isGet
-                && response.redirected
-                && Object.keys(redirectedPageErrors).length > 0;
-
             if (response.redirected && response.url) {
                 const redirectedUrl = new URL(response.url);
                 window.history.replaceState({}, '', redirectedUrl.pathname + redirectedUrl.search + redirectedUrl.hash);
+            }
 
-                // Mutations that redirect can leave stale props; refresh with an explicit GET.
-                // A validation redirect already contains the flashed errors and must not be
-                // followed by another GET, which would consume them and report false success.
-                if (!isGet && page?.component && !redirectedWithErrors && refreshRedirected) {
-                    return this.visit(redirectedUrl.pathname + redirectedUrl.search, {
-                        method: 'get',
-                        replace: true,
-                        preserveScroll: options.preserveScroll,
-                        showSkeleton: false,
-                        onSuccess: options.onSuccess,
-                        onError: options.onError,
-                        onFinish: options.onFinish,
-                    });
-                }
-            } else if (isGet && !page?.component && visitId === latestGetVisitId) {
+            // Fetch/XHR already followed the redirect and returned fresh page props.
+            // Complete the submission from that response, preserving its flash/errors.
+            const page = await parseSpaResponse(response, options);
+            if (!response.redirected && isGet && !page?.component && visitId === latestGetVisitId) {
                 window.history.replaceState({}, '', previousUrl);
             }
 
@@ -427,6 +415,11 @@ export const router = {
 
             if (isGet && visitId === latestGetVisitId) {
                 window.history.replaceState({}, '', previousUrl);
+            }
+
+            if (!isGet && options.onError) {
+                options.onError({ network: error?.message || 'Network request failed.' });
+                return null;
             }
 
             throw error;
@@ -565,6 +558,7 @@ export function Head({ title, children }) {
 export function useForm(initialData = {}) {
     const defaults = useRef(initialData);
     const transformRef = useRef((data) => data);
+    const submitting = useRef(false);
     const [data, setFormData] = useState(initialData);
     const [errors, setErrors] = useState({});
     const [processing, setProcessing] = useState(false);
@@ -623,6 +617,8 @@ export function useForm(initialData = {}) {
     };
 
     const submit = async (method, url, options = {}) => {
+        if (submitting.current) return;
+        submitting.current = true;
         setProcessing(true);
         emit('form-processing', { detail: { processing: true } });
         setProgress(null);
@@ -651,6 +647,7 @@ export function useForm(initialData = {}) {
                 options.onSuccess?.(page);
             },
             onFinish: () => {
+                submitting.current = false;
                 setProcessing(false);
                 emit('form-processing', { detail: { processing: false } });
                 setProgress(null);

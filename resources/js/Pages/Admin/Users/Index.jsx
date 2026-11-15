@@ -38,6 +38,7 @@ export default function UsersIndex({ users, filters, roles, locations = [] }) {
     const visibleUsers = users.map((user) => updatedUsers[user.id] || user);
 
     const form = useForm({ ...emptyForm });
+    const deleteForm = useForm({});
 
     const openCreate = () => {
         setSuccessMessage('');
@@ -96,8 +97,8 @@ export default function UsersIndex({ users, filters, roles, locations = [] }) {
     };
 
     const confirmDelete = () => {
-        if (!deleteUser) return;
-        router.delete(routeWithBase(`/admin/users/${deleteUser.id}`, app_base), {
+        if (!deleteUser || deleteForm.processing) return;
+        deleteForm.delete(routeWithBase(`/admin/users/${deleteUser.id}`, app_base), {
             preserveScroll: true,
             onSuccess: () => setDeleteUser(null),
         });
@@ -114,7 +115,7 @@ export default function UsersIndex({ users, filters, roles, locations = [] }) {
         >
             <Head title={t('Admin Users')} />
 
-            <AdminFlash flash={flash} errors={form.errors} />
+            <AdminFlash flash={flash} />
             {successMessage && <div className="flash success" role="status">{t(successMessage)}</div>}
 
             <section className="panel glass">
@@ -213,7 +214,7 @@ export default function UsersIndex({ users, filters, roles, locations = [] }) {
             </section>
 
             {open && (
-                <CrudModal open title={uiText(editUser ? t('Edit staff member') : t('New staff member'))} onClose={closeModal} busy={form.processing} action={<> <button form="admin-users-index-jsx-1" type="submit" className="btn primary" disabled={form.processing}>
+                <CrudModal open title={uiText(editUser ? t('Edit staff member') : t('New staff member'))} onClose={closeModal} busy={form.processing} errors={form.errors} action={<> <button form="admin-users-index-jsx-1" type="submit" className="btn primary" disabled={form.processing}>
                                 {uiText(editUser ? t('Save changes') : t('Create staff'))}
                             </button> </>}>
 <form id="admin-users-index-jsx-1" className="admin-modal-form" onSubmit={submit}>
@@ -308,11 +309,12 @@ export default function UsersIndex({ users, filters, roles, locations = [] }) {
             )}
 
             {deleteUser && (
-                <CrudModal open title={t('Remove staff account')} onClose={() => setDeleteUser(null)} busy={false} action={<> <button type="button" className="btn danger" onClick={confirmDelete}>
+                <CrudModal open title={t('Remove staff account')} onClose={() => { setDeleteUser(null); deleteForm.clearErrors(); }} busy={deleteForm.processing} action={<> <button type="button" className="btn danger" onClick={confirmDelete} disabled={deleteForm.processing}>
                                 {t('Delete account')}
                             </button> </>}>
 
                         <div style={{ padding: '0 16px 16px' }}>
+                            {Object.entries(deleteForm.errors).map(([key, error]) => <p key={key} className="flash error" role="alert">{uiText(error)}</p>)}
                             <p>
                                 {t('Remove')} <strong>{deleteUser.name}</strong> ({deleteUser.email})? {t('This soft-deletes the account and revokes admin access.')}
                             </p>

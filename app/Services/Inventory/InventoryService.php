@@ -120,7 +120,11 @@ class InventoryService
             Product::query()->whereKey($product->id)->lockForUpdate()->firstOrFail();
             $bale = \App\Models\VintageBale::where('product_id', $product->id)->lockForUpdate()->first();
             $uncountedBale = $bale && $bale->total_pieces === null;
-            if ($bale && (! in_array($type, ['sale', 'sale_return', 'opening_balance'], true) || (int) $bale->location_id !== (int) $location->id)) {
+            $baleCorrection = $bale && $reference instanceof \App\Models\VintageBale
+                && (int) $reference->id === (int) $bale->id
+                && in_array($type, ['adjustment_gain', 'adjustment_loss'], true)
+                && in_array($reasonCode, ['bale_count_correction', 'bale_finished'], true);
+            if ($bale && ((! in_array($type, ['sale', 'sale_return', 'opening_balance'], true) && ! $baleCorrection) || (int) $bale->location_id !== (int) $location->id)) {
                 throw ValidationException::withMessages(['quantity' => \App\Support\UiText::get('Manage this bale through Bales, POS, and garment returns.')]);
             }
             $this->ensureBalance($location, $product);

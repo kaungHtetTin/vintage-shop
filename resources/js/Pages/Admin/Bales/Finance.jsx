@@ -91,7 +91,7 @@ export default function Finance({
                                     router.get(
                                         url,
                                         {},
-                                        { preserveScroll: true },
+                                        { preserveScroll: true, showSkeleton: false },
                                     );
                                 },
                             });
@@ -294,7 +294,7 @@ export default function Finance({
             </section>);
 
     return (
-        <Page title={t(isReport ? 'Bale results & reports' : 'Finance')} eyebrow={t(isReport ? 'Sales reports' : 'Cash management')} errors={expense.errors}
+        <Page title={t(isReport ? 'Bale results & reports' : 'Finance')} eyebrow={t(isReport ? 'Sales reports' : 'Cash management')}
             action={<div className="inline-actions admin-page-actions">
                 <AdminFilterDrawer filters={filters} fields={[
                     { key: 'location_id', label: 'Store', type: 'select', options: filterOptions(locations, 'All stores') },

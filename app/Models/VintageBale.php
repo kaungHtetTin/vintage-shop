@@ -8,6 +8,8 @@ class VintageBale extends Model
 {
     protected $guarded = ['id'];
     protected $casts = ['purchased_at' => 'date', 'purchase_cost' => 'decimal:2', 'laundry_cost' => 'decimal:2', 'total_pieces' => 'integer', 'ready_at' => 'datetime', 'closed_at' => 'datetime', 'laundry_started_at' => 'datetime'];
+    protected $appends = ['edit_token'];
+    public function getEditTokenAttribute(): string { return hash('sha256', json_encode($this->getAttributes())); }
     public function supplier() { return $this->belongsTo(VintageSupplier::class, 'supplier_id'); }
     public function location() { return $this->belongsTo(Location::class); }
     public function product() { return $this->belongsTo(Product::class); }

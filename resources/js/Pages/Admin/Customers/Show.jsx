@@ -2,6 +2,7 @@ import { usePhraseTranslation as useUiTranslation } from '@/Utils/i18n';
 import { formatDate as displayformatDate, formatDateTime as displayformatDateTime } from '@/Utils/dateTime';
 import DetailTableRow from '@/Components/Admin/DetailTableRow';
 import { CrudAction } from "@/Components/Admin/CrudModal";
+import CorrectCreditPayment, { CreditCorrectionNotes } from '@/Components/Admin/CorrectCreditPayment';
 import { getOrderStatus, orderStatusLabels } from '@/constants/orderLabels';
 import { Head, Link, useForm, usePage } from "@/spa/router";
 import AdminLayout from "@/Layouts/AdminLayout";
@@ -370,12 +371,13 @@ export default function CustomerShow({
                                 <th className="numeric-cell">{t("Balance")}</th>
                                 <th>{t("Due date")}</th>
                                 <th>{t("Staff")}</th>
+                                {canManageCredit && <th>{t('Actions')}</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {!creditTransactions.length ? (
                                 <tr>
-                                    <td colSpan={8}>
+                                    <td colSpan={canManageCredit ? 9 : 8}>
                                         <span className="muted">
                                             {t("No credit transactions yet.")}
                                         </span>
@@ -394,6 +396,7 @@ export default function CustomerShow({
                                             <small>
                                                 {entry.reference || "-"}
                                             </small>
+                                            <CreditCorrectionNotes entry={entry} />
                                         </td>
                                         <td>
                                             {entry.order?.order_number || "-"}
@@ -405,7 +408,7 @@ export default function CustomerShow({
                                                         ? "warning"
                                                         : "success"
                                                 }
-                                                label={t(entry.type)}
+                                                label={t(entry.type === 'payment_reversal' ? 'Payment reversal' : entry.type)}
                                             />
                                         </td>
                                         <td className="numeric-cell">
@@ -419,6 +422,7 @@ export default function CustomerShow({
                                         <td className="numeric-cell">{money(entry.balance_after)}</td>
                                         <td>{displayformatDate(entry.due_date)}</td>
                                         <td>{entry.creator?.name || "-"}</td>
+                                        {canManageCredit && <td><CorrectCreditPayment entry={entry} customerId={customer.id} /></td>}
                                     </DetailTableRow>
                                 ))
                             )}

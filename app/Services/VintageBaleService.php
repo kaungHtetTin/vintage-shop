@@ -39,6 +39,55 @@ class VintageBaleService
         }, 3);
     }
 
+    public function update(VintageBale $bale, array $data, User $actor): VintageBale
+    {
+        return DB::transaction(function () use ($bale, $data, $actor) {
+            $product = Product::whereKey($bale->product_id)->lockForUpdate()->firstOrFail();
+            $locked = VintageBale::whereKey($bale->id)->lockForUpdate()->firstOrFail();
+            if (! hash_equals($locked->edit_token, $data['edit_token'])) {
+                throw ValidationException::withMessages(['edit_token' => \App\Support\UiText::get('This bale changed. Reload its details before editing again.')]);
+            }
+            unset($data['edit_token']);
+            $before = $locked->only(array_keys($data));
+            $count = $data['total_pieces'] ?? null;
+            $countChanged = $count !== null ? (int) $count !== $locked->total_pieces : $locked->total_pieces !== null;
+            if ($locked->status === 'closed' && $countChanged) {
+                throw ValidationException::withMessages(['total_pieces' => \App\Support\UiText::get('The garment count is fixed after a bale is finished.')]);
+            }
+            if ($locked->status === 'ready' && $countChanged) {
+                if ($count === null) {
+                    throw ValidationException::withMessages(['total_pieces' => \App\Support\UiText::get('Keep the counted quantity once selling has started.')]);
+                }
+                $sold = -(float) \App\Models\InventoryMovement::where('product_id', $product->id)->whereIn('type', ['sale', 'sale_return'])->sum('quantity_delta');
+                $balance = InventoryBalance::where('product_id', $product->id)->where('location_id', $locked->location_id)->lockForUpdate()->firstOrFail();
+                $remaining = (int) $count - $sold;
+                if ($remaining < (float) $balance->reserved_qty || $remaining < 0) {
+                    throw ValidationException::withMessages(['total_pieces' => \App\Support\UiText::get('The garment count must cover sold and reserved pieces.')]);
+                }
+                $delta = $remaining - (float) $balance->on_hand_qty;
+                if (abs($delta) > .00005) {
+                    $this->inventory->adjust($locked->location, $product, $delta, 'bale_count_correction', $actor, 'bale:'.$locked->id.':count:'.Str::uuid(), $locked, 'Garment count corrected from bale details.');
+                }
+            }
+            $locked->update($data);
+            $product->update(['product_code' => $locked->code, 'name' => $locked->code]);
+            if (in_array($locked->status, ['ready', 'closed'], true)) {
+                $product->update(['original_price' => $locked->total_pieces ? round(((float) $locked->purchase_cost + (float) $locked->laundry_cost) / $locked->total_pieces, 6) : 0]);
+            }
+            foreach (['bale_purchase' => 'purchase', 'bale_laundry' => 'laundry'] as $category => $prefix) {
+                $entry = FinancialEntry::where('bale_id', $locked->id)->where('category', $category)->lockForUpdate()->first();
+                $amount = (float) $locked->{$prefix.'_cost'};
+                if ($entry) {
+                    $entry->update(['amount' => $amount, 'payment_method' => $locked->{$prefix.'_payment_method'}, 'title' => ($prefix === 'purchase' ? 'Bale purchase ' : 'Laundry ').$locked->code, 'reference' => $locked->code.':'.$category] + ($prefix === 'purchase' ? ['entry_date' => $locked->purchased_at->toDateString()] : []));
+                } elseif ($amount > 0) {
+                    $this->expense($locked, $category, $amount, $actor, $prefix === 'purchase' ? $locked->purchased_at->toDateString() : ($locked->ready_at ?? now())->timezone(config('vintage.timezone'))->toDateString());
+                }
+            }
+            $this->audit->record('bale.updated', $locked, ['before' => $before, 'after' => $locked->only(array_keys($data))]);
+            return $locked->fresh();
+        }, 3);
+    }
+
     public function transition(VintageBale $bale, string $next, array $data, User $actor): VintageBale
     {
         return DB::transaction(function () use ($bale, $next, $data, $actor) {
@@ -53,7 +102,7 @@ class VintageBaleService
                 $locked->update(['total_pieces' => $count, 'laundry_cost' => $laundry, 'laundry_payment_method' => $data['laundry_payment_method'] ?? 'cash']);
                 if ($count !== null) $this->inventory->openingBalance($locked->location, $product, $count, $actor, 'bale:'.$locked->id.':opening');
                 $product->update(['original_price' => $count ? round(((float) $locked->purchase_cost + $laundry) / $count, 6) : 0, 'status' => 'active', 'is_active' => true]);
-                if ($laundry > 0) $this->expense($locked, 'bale_laundry', $laundry, $actor, now(config('vintage.timezone'))->toDateString());
+                if ($laundry > 0 || $locked->entries()->where('category', 'bale_laundry')->exists()) $this->expense($locked, 'bale_laundry', $laundry, $actor, now(config('vintage.timezone'))->toDateString());
                 $locked->update(['status' => 'ready', 'ready_at' => now()]);
             }
             if ($next === 'closed') {
@@ -89,6 +138,6 @@ class VintageBaleService
 
     private function expense(VintageBale $bale, string $category, float $amount, User $actor, string $date): void
     {
-        FinancialEntry::create(['bale_id' => $bale->id, 'location_id' => $bale->location_id, 'recorded_by' => $actor->id, 'type' => 'expense', 'category' => $category, 'amount' => $amount, 'title' => ($category === 'bale_purchase' ? 'Bale purchase ' : 'Laundry ').$bale->code, 'reference' => $bale->code.':'.$category, 'entry_date' => $date, 'payment_method' => $category === 'bale_purchase' ? $bale->purchase_payment_method : $bale->laundry_payment_method, 'status' => 'approved']);
+        FinancialEntry::updateOrCreate(['bale_id' => $bale->id, 'category' => $category], ['location_id' => $bale->location_id, 'recorded_by' => $actor->id, 'type' => 'expense', 'amount' => $amount, 'title' => ($category === 'bale_purchase' ? 'Bale purchase ' : 'Laundry ').$bale->code, 'reference' => $bale->code.':'.$category, 'entry_date' => $date, 'payment_method' => $category === 'bale_purchase' ? $bale->purchase_payment_method : $bale->laundry_payment_method, 'status' => 'approved']);
     }
 }

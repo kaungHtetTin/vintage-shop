@@ -250,7 +250,7 @@ export default function RolesIndex({ roles, permissionGroups }) {
             }
         >
             <Head title={t('Roles & Permissions')} />
-            <AdminFlash flash={flash} errors={form.errors} />
+            <AdminFlash flash={flash} />
             {deleteNotice && <div className="flash success" role="status">{uiText(deleteNotice)}</div>}
             {updateNotice && <div className="flash success" role="status">{uiText(updateNotice)}</div>}
 

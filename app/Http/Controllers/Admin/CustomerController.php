@@ -176,10 +176,11 @@ class CustomerController extends Controller
             ]);
 
         $creditTransactions = $customer->creditTransactions()
-            ->with(['order:id,order_number,receipt_number', 'creator:id,name'])
-            ->latest()
+            ->withCorrectionDetails()->with('creator:id,name')
+            ->latest()->orderByDesc('id')
             ->take(50)
             ->get();
+        $creditTransactions->each(fn ($entry) => $entry->setAttribute('can_correct', $entry->canBeCorrectedBy(request()->user())));
         $creditOrders = $customer->orders()
             ->where('credit_amount', '>', 0)
             ->where('status', '!=', 'cancelled')
@@ -261,6 +262,7 @@ class CustomerController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $customer, $request, $creditService, $auditLogService) {
+            User::whereKey($customer->id)->lockForUpdate()->firstOrFail();
             $amount = round((float) $validated['amount'], 2);
             $orders = Order::query()
                 ->where('user_id', $customer->id)
@@ -340,5 +342,19 @@ class CustomerController extends Controller
         }, 3);
 
         return back()->with('success', \App\Support\UiText::get('Credit payment recorded.'));
+    }
+
+    public function correctCreditPayment(Request $request, User $customer, \App\Models\CustomerCreditTransaction $transaction, \App\Services\CreditPaymentCorrectionService $service)
+    {
+        abort_unless($customer->role === User::CUSTOMER_ROLE && (int) $transaction->customer_id === (int) $customer->id, 404);
+        $data = $request->validate([
+            'request_key' => ['required', 'uuid'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999.99', 'decimal:0,2'],
+            'tender_type' => ['required', Rule::in(['cash', 'mmqr', 'card', 'mobile', 'bank_transfer'])],
+            'reference' => ['nullable', 'string', 'max:100'],
+            'reason' => ['required', 'string', 'max:500', 'not_regex:/^\s*$/'],
+        ]);
+        $service->correct($customer, $transaction, $data, $request->user());
+        return back(303)->with('success', \App\Support\UiText::get('Credit payment corrected. The original and replacement remain in history.'));
     }
 }

@@ -26,7 +26,7 @@ export default function ReceiptPaper({ order, settings = {} }) {
     const tenderRows = Array.isArray(order.pos_tender_summary?.tenders)
         ? order.pos_tender_summary.tenders
         : [
-            ...(order.payments || []).map((row) => ({ type: row.tender_type || row.method, amount: Number(row.amount), amount_tendered: Number(row.amount_tendered ?? row.amount), change_due: Number(row.change_due || 0), reference: row.payment_details?.reference })),
+            ...(order.payments || []).filter(row => row.status !== 'reversed').map((row) => ({ type: row.tender_type || row.method, amount: Number(row.amount), amount_tendered: Number(row.amount_tendered ?? row.amount), change_due: Number(row.change_due || 0), reference: row.payment_details?.reference })),
             ...(Number(order.credit_amount || 0) > 0 ? [{ type: 'credit', amount: Number(order.credit_amount) }] : []),
         ];
     const tenderLabel = tenderRows.length > 1 ? t('Split payment') : (tender === 'mmqr' ? t('MMQR (Pay)') : t(tender || 'cash'));
